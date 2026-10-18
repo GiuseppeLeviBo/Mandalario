@@ -1,7 +1,7 @@
 {
   "name": "Mandalario — mandala da colorare",
   "short_name": "Mandalario",
-  "description": "Genera mandala casuali da stampare e colorare.",
+  "description": "Genera mandala, intrecci, muri e tassellature alla Escher da stampare e colorare.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",

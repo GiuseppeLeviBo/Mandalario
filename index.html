@@ -15,7 +15,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Mandalario</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Genera mandala casuali da stampare e colorare.">
+<meta name="description" content="Genera mandala, intrecci, muri e tassellature alla Escher da stampare e colorare.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Young+Serif&display=swap">
@@ -114,6 +114,7 @@ header.top {
   transition: opacity .25s ease;
 }
 .sheet .art svg { width: 100%; height: 100%; display: block; }
+.sheet.rect .art { aspect-ratio: 1000 / 1400; margin-top: 8.333%; } /* 180 × 252 mm, 15 mm dall'alto */
 .sheet .art.fade { opacity: .15; }
 .sheet .caption {
   position: absolute; left: 0; right: 0; bottom: 5.5%;
@@ -183,6 +184,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   text-align: center; padding: 7px 4px; border-radius: 7px; cursor: pointer;
   font-size: 14px; font-weight: 500; color: var(--muted);
 }
+.seg.four label { font-size: 13px; padding-inline: 2px; }
 .seg input:checked + label { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -235,6 +237,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     break-after: avoid;
   }
   .sheet .art { width: 180mm; height: 180mm; margin-top: 41mm; opacity: 1 !important; }
+  .sheet.rect .art { width: 180mm; height: 252mm; margin-top: 15mm; }
   .sheet .caption { font-size: 8pt; bottom: 16mm; color: #888; }
 }
 </style>
@@ -255,7 +258,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     </svg>
     <div class="brand">
       <h1>Mandalario</h1>
-      <p>Mandala sempre nuovi, pronti da stampare e colorare.</p>
+      <p>Mandala e motivi sempre nuovi, pronti da stampare e colorare.</p>
     </div>
   </header>
 
@@ -263,7 +266,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     <section class="stage" aria-label="Anteprima del foglio">
       <div class="sheet-meta"><span>Foglio A4 · 210 × 297 mm</span><span id="metaSym">12 settori</span></div>
       <div class="sheet" id="sheet">
-        <div class="art" id="art" role="img" aria-label="Mandala da colorare"></div>
+        <div class="art" id="art" role="img" aria-label="Disegno da colorare"></div>
         <div class="caption" id="caption"></div>
       </div>
     </section>
@@ -272,7 +275,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <div class="actions">
         <button class="btn primary" id="btnNew" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>
-          Nuovo mandala
+          <span id="btnNewLabel">Nuovo mandala</span>
         </button>
         <div class="row3 app-only">
           <button class="btn" id="btnPrint" type="button">
@@ -282,7 +285,21 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
           <button class="btn" id="btnPng" type="button">PNG</button>
           <button class="btn" id="btnSvg" type="button">SVG</button>
         </div>
+        <button class="btn app-only" id="btnShare" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+          Condividi link
+        </button>
         <p class="note preview-only" hidden>Questa è l'anteprima. Stampa e salvataggio funzionano nell'app installata.</p>
+      </div>
+
+      <div class="field">
+        <span class="label" id="formLbl">Forma</span>
+        <div class="seg four" role="radiogroup" aria-labelledby="formLbl">
+          <input type="radio" name="form" id="fMandala" value="mandala" checked><label for="fMandala">Mandala</label>
+          <input type="radio" name="form" id="fIntreccio" value="intreccio"><label for="fIntreccio">Intreccio</label>
+          <input type="radio" name="form" id="fMuro" value="muro"><label for="fMuro">Muro</label>
+          <input type="radio" name="form" id="fEscher" value="escher"><label for="fEscher">Escher</label>
+        </div>
       </div>
 
       <div class="field">
@@ -293,10 +310,10 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
           </button>
         </div>
-        <p class="hint" id="codeHint">Lo stesso codice rigenera lo stesso mandala. Prova anche un nome.</p>
+        <p class="hint" id="codeHint">Lo stesso codice rigenera lo stesso disegno. Prova anche un nome.</p>
       </div>
 
-      <div class="field">
+      <div class="field" id="symField">
         <div class="label"><label for="sym">Simmetria</label><output id="symOut" for="sym">12</output></div>
         <input id="sym" type="range" min="5" max="24" step="1" value="12">
         <label class="check"><input id="symAuto" type="checkbox" checked> Cambiala a ogni nuovo mandala</label>
@@ -313,11 +330,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
       <div class="field">
         <span class="label" id="styLbl">Stile</span>
-        <div class="seg" role="radiogroup" aria-labelledby="styLbl">
-          <input type="radio" name="sty" id="styF" value="fiorito"><label for="styF">Fiorito</label>
-          <input type="radio" name="sty" id="styG" value="geometrico"><label for="styG">Geometrico</label>
-          <input type="radio" name="sty" id="styM" value="misto" checked><label for="styM">Misto</label>
-        </div>
+        <div class="seg" role="radiogroup" aria-labelledby="styLbl" id="styles"></div>
       </div>
 
       <div class="field">
@@ -330,7 +343,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       <div class="recent">
         <h2>Recenti</h2>
         <div class="thumbs" id="thumbs"></div>
-        <p class="empty" id="emptyThumbs" hidden>I mandala che generi compaiono qui.</p>
+        <p class="empty" id="emptyThumbs" hidden>I disegni che generi compaiono qui.</p>
       </div>
     </aside>
   </main>
@@ -338,10 +351,14 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* Mandalario — generatore di mandala vettoriali con simmetria radiale.
-   Tutto deterministico: stesso codice + stesse impostazioni = stesso mandala. */
+/* Mandalario — generatore di disegni vettoriali da colorare:
+   mandala a simmetria radiale e motivi che riempiono il foglio (intrecci, muri, tassellature alla Escher).
+   Tutto deterministico: stesso codice + stesse impostazioni = stesso disegno. */
 (function (root) {
   'use strict';
+
+  // versione del motore: i link la riportano, così un disegno condiviso resta uguale anche dopo gli aggiornamenti
+  const ENGINE = 2;
 
   // ---------- numeri casuali riproducibili ----------
   function xmur3(str) {
@@ -395,6 +412,104 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   };
   // chiude una forma tornando lungo l'arco di raggio ra da +w a -w
   const baseArc = (ra, w) => `A${n1(ra)} ${n1(ra)} 0 0 0 ${P(ra, -w)}Z`;
+  // coordinate cartesiane
+  const pt = (x, y) => n1(x) + ' ' + n1(y);
+  const poly = (pts) => 'M' + pts.map((p) => pt(p[0], p[1])).join('L') + 'Z';
+  const mod = (a, b) => ((a % b) + b) % b;
+  const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+  // spline di Catmull-Rom convertita in curve di Bézier; il punto corrente deve essere pts[0]
+  function splineSegs(pts, closed) {
+    const n = pts.length;
+    const get = (i) => (closed ? pts[mod(i, n)] : pts[Math.max(0, Math.min(n - 1, i))]);
+    let d = '';
+    for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2);
+      d += 'C' + pt(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6) + ' ' +
+        pt(p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6) + ' ' + pt(p2[0], p2[1]);
+    }
+    return d;
+  }
+  const spline = (pts, closed) => 'M' + pt(pts[0][0], pts[0][1]) + splineSegs(pts, closed) + (closed ? 'Z' : '');
+  // gli stessi punti della spline aperta, campionati (k per tratto)
+  function splineSample(pts, k) {
+    const n = pts.length, get = (i) => pts[Math.max(0, Math.min(n - 1, i))], out = [pts[0]];
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2);
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      for (let j = 1; j <= k; j++) {
+        const t = j / k, u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, e = t * t * t;
+        out.push([a * p1[0] + b * c1[0] + c * c2[0] + e * p2[0], a * p1[1] + b * c1[1] + c * c2[1] + e * p2[1]]);
+      }
+    }
+    return out;
+  }
+  // poligono con gli angoli arrotondati
+  function roundPoly(pts, r) {
+    const n = pts.length;
+    let d = '';
+    for (let i = 0; i < n; i++) {
+      const p = pts[i], a = pts[mod(i - 1, n)], b = pts[(i + 1) % n];
+      const ka = Math.min(r, dist(a, p) * 0.45) / dist(a, p), kb = Math.min(r, dist(b, p) * 0.45) / dist(b, p);
+      d += (i ? 'L' : 'M') + pt(p[0] + (a[0] - p[0]) * ka, p[1] + (a[1] - p[1]) * ka) +
+        'Q' + pt(p[0], p[1]) + ' ' + pt(p[0] + (b[0] - p[0]) * kb, p[1] + (b[1] - p[1]) * kb);
+    }
+    return d + 'Z';
+  }
+  function area(pts) {
+    let s = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      s += a[0] * b[1] - b[0] * a[1];
+    }
+    return s / 2;
+  }
+  function centroid(pts) {
+    let x = 0, y = 0, s = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], c = a[0] * b[1] - b[0] * a[1];
+      s += c; x += (a[0] + b[0]) * c; y += (a[1] + b[1]) * c;
+    }
+    return Math.abs(s) < 1e-9 ? pts[0] : [x / (3 * s), y / (3 * s)];
+  }
+  // tiene la parte del poligono con nx*x + ny*y <= c
+  function clipHalf(pts, nx, ny, c) {
+    const out = [];
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const da = nx * a[0] + ny * a[1] - c, db = nx * b[0] + ny * b[1] - c;
+      if (da <= 0) out.push(a);
+      if ((da < 0 && db > 0) || (da > 0 && db < 0)) {
+        const t = da / (da - db);
+        out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+      }
+    }
+    return out;
+  }
+  // poligono convesso rientrato di d su ogni lato
+  function inset(pts, d) {
+    const sg = area(pts) > 0 ? 1 : -1;
+    let out = pts;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], l = dist(a, b);
+      if (l < 1e-6) continue;
+      const nx = (sg * (b[1] - a[1])) / l, ny = (-sg * (b[0] - a[0])) / l; // normale verso l'esterno
+      out = clipHalf(out, nx, ny, nx * a[0] + ny * a[1] - d);
+      if (out.length < 3) return null;
+    }
+    return out.filter((p, i) => dist(p, out[mod(i - 1, out.length)]) > 0.5);
+  }
+  // stella a k punte con centro nel punto polare (u, t), punta rivolta verso l'esterno
+  function star(u, t, R, k) {
+    const cx = u * Math.sin(t), cy = -u * Math.cos(t);
+    let d = '';
+    for (let i = 0; i < 2 * k; i++) {
+      const rr = i % 2 ? R * 0.45 : R, th = t + (Math.PI * i) / k;
+      d += (i ? 'L' : 'M') + pt(cx + rr * Math.sin(th), cy - rr * Math.cos(th));
+    }
+    return path(d + 'Z');
+  }
 
   // ---------- motivi (disegnati nel settore centrato su angolo 0) ----------
   function petalPath(ra, rb, w, type) {
@@ -538,37 +653,89 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
         if (rr > 3) s += circle(rm, 0, rr);
       }
       return s;
+    },
+
+    // punte di stella con i lati incurvati verso l'interno
+    stelle(g) {
+      const { r1, r2, a, det, rng } = g, d = r2 - r1;
+      const k = rng.range(0.16, 0.3), um = r1 + d * 0.42;
+      let s = path(`M${P(r1, -a)}Q${P(um, -a * k)} ${P(r2, 0)}Q${P(um, a * k)} ${P(r1, a)}` + baseArc(r1, a));
+      if (det >= 2) {
+        const ub = r1 + d * 0.08, ai = a * 0.5;
+        s += path(`M${P(ub, -ai)}Q${P(r1 + d * 0.4, -ai * k)} ${P(r2 - d * 0.3, 0)}Q${P(r1 + d * 0.4, ai * k)} ${P(ub, ai)}Z`);
+      }
+      if (det >= 3) {
+        const u = r1 + d * 0.7, rr = Math.min(d * 0.14, u * a * 0.42);
+        if (rr > 4) s += star(u, a, rr, 5);
+      }
+      return s;
+    },
+
+    // onde che girano attorno all'anello; due onde in controfase formano una catena di occhi
+    onde(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1, rm = (r1 + r2) / 2;
+      const amp = d * (det === 1 ? 0.26 : 0.22);
+      const hump = (h, t0, t1) => `C${P(rm + h * 1.3, t0 + (t1 - t0) / 3)} ${P(rm + h * 1.3, t0 + (2 * (t1 - t0)) / 3)} ${P(rm, t1)}`;
+      const wave = (h) => path(`M${P(rm, -a)}` + hump(h, -a, 0) + hump(-h, 0, a), 'fill="none"');
+      let s = wave(amp);
+      if (det >= 2) s += wave(-amp);
+      if (det >= 3) {
+        const rr = Math.min(amp * 0.42, rm * a * 0.22);
+        if (rr > 3) s += circle(rm, -a / 2, rr) + circle(rm, a / 2, rr);
+      }
+      return s;
+    },
+
+    // tondi con una spirale dentro
+    spirali(g) {
+      const { r1, r2, a, det, rng } = g, d = r2 - r1, rm = (r1 + r2) / 2;
+      const rho = Math.min(d * 0.42, rm * Math.sin(a) * 0.86);
+      let s = circle(rm, 0, rho);
+      if (rho > 10) {
+        const turns = det === 1 ? 1.5 : det === 2 ? 2 : 2.6, dir = rng.chance(0.5) ? 1 : -1;
+        const steps = Math.ceil(turns * 10), pts = [];
+        for (let i = 0; i <= steps; i++) {
+          const f = i / steps, th = dir * f * turns * 2 * Math.PI, r = rho * (0.1 + 0.76 * f);
+          pts.push([r * Math.sin(th), -rm - r * Math.cos(th)]);
+        }
+        s += path(spline(pts), 'fill="none"');
+      }
+      const small = Math.min(rho * 0.36, d * 0.16);
+      if (det >= 2 && small > 3 && 2 * rm * Math.sin(a / 2) - rho > small * 1.4) s += circle(rm, a, small);
+      return s;
     }
   };
 
-  const STYLES = {
+  // pesi dei motivi della prima versione: restano per ridisegnare uguali i mandala già creati
+  const STYLES_V1 = {
     fiorito:    { petali: 5, foglie: 3, archi: 3, smerli: 3, gocce: 3, perle: 2, fascia: 1, triangoli: 0.5, rombi: 0.5 },
     geometrico: { triangoli: 4, rombi: 4, perle: 3, fascia: 3, archi: 2, smerli: 1.5, petali: 1, gocce: 1, foglie: 0 },
     misto:      { petali: 3, foglie: 2, archi: 2.5, smerli: 2.5, gocce: 2, triangoli: 2.5, rombi: 2.5, perle: 2, fascia: 1.5 }
   };
-  const EDGE_MOTIFS = ['petali', 'foglie', 'archi', 'smerli', 'gocce', 'triangoli'];
+  const STYLES = {
+    fiorito:    { petali: 5, foglie: 3, archi: 3, smerli: 3, gocce: 3, perle: 2, fascia: 1, triangoli: 0.5, rombi: 0.5, spirali: 2.5, onde: 1.5, stelle: 0.5 },
+    geometrico: { triangoli: 4, rombi: 4, perle: 3, fascia: 3, archi: 2, smerli: 1.5, petali: 1, gocce: 1, foglie: 0, stelle: 3.5, onde: 1.5, spirali: 0.5 },
+    misto:      { petali: 3, foglie: 2, archi: 2.5, smerli: 2.5, gocce: 2, triangoli: 2.5, rombi: 2.5, perle: 2, fascia: 1.5, stelle: 2.5, onde: 2, spirali: 2 }
+  };
+  const EDGE_MOTIFS = ['petali', 'foglie', 'archi', 'smerli', 'gocce', 'triangoli', 'stelle'];
   const OVERSHOOT = { petali: 1, foglie: 1, archi: 1, gocce: 1 };
-  const NEEDS_BORDER = { perle: 1, fascia: 1, rombi: 1 };
-  const STRAIGHT = { triangoli: 1, rombi: 1 };
+  const NEEDS_BORDER = { perle: 1, fascia: 1, rombi: 1, onde: 1, spirali: 1 };
+  const STRAIGHT = { triangoli: 1, rombi: 1, stelle: 1, onde: 1 };
 
   let uid = 0;
 
-  /**
-   * opts: { seed, sym (4–32), detail (1–3), style, stroke }
-   * Restituisce una stringa SVG con viewBox -500..500.
-   */
-  function generate(opts) {
+  // anelli e rosone centrale: restituisce le definizioni e il corpo, con viewBox -500..500
+  function mandalaParts(opts, prefix) {
     const seed = opts.seed;
     const N = Math.max(4, Math.min(32, opts.sym | 0));
     const det = Math.max(1, Math.min(3, opts.detail | 0));
-    const style = STYLES[opts.style] || STYLES.misto;
-    const ink = opts.ink || '#1f1f22';
-    const stroke = opts.stroke || 2.4;
+    const table = opts.v === 1 ? STYLES_V1 : STYLES;
+    const style = table[opts.style] || table.misto;
     const rng = makeRng(seed);
-    const prefix = 'm' + (++uid).toString(36) + '_';
 
     const R = 478;
-    const ringCount = det === 1 ? rng.int(4, 5) : det === 2 ? rng.int(5, 7) : rng.int(7, 9);
+    const drawn = det === 1 ? rng.int(4, 5) : det === 2 ? rng.int(5, 7) : rng.int(7, 9);
+    const ringCount = opts.rings || drawn;
     const r0 = R * (det === 1 ? rng.range(0.13, 0.16) : rng.range(0.09, 0.12));
     const minCell = det === 1 ? 46 : det === 2 ? 30 : 20;
 
@@ -639,11 +806,531 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     for (let k = 0; k < m; k++) body += `<use href="#${cid}" transform="rotate(${n1((360 * k) / m)})"/>`;
     body += `<circle r="${n1(r0 * 0.36)}"/>`;
     if (det >= 2) body += `<circle r="${n1(r0 * 0.16)}"/>`;
+    return { defs, body };
+  }
 
+  /**
+   * opts: { seed, sym (4–32), detail (1–3), style, stroke, v }
+   * Restituisce una stringa SVG con viewBox -500..500.
+   */
+  function generate(opts) {
+    const ink = opts.ink || '#1f1f22';
+    const stroke = opts.stroke || 2.4;
+    const { defs, body } = mandalaParts(opts, 'm' + (++uid).toString(36) + '_');
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-500 -500 1000 1000">` +
       `<defs>${defs.join('')}</defs>` +
       `<g fill="#fff" stroke="${ink}" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round">${body}</g></svg>`;
   }
+
+  // ---------- disegni che riempiono il foglio, dentro una cornice ----------
+  const RW = 1000, RH = 1400;                  // 180 × 252 mm, stessa scala del mandala
+  const FR = 26;                                // larghezza della cornice
+  const AX0 = FR, AY0 = FR, AX1 = RW - FR, AY1 = RH - FR, CX = RW / 2, CY = RH / 2;
+  const REACH = Math.hypot(RW, RH) / 2 + 60;    // copre il foglio a qualsiasi rotazione
+  const inArea = (p, m) => p[0] > AX0 - m && p[0] < AX1 + m && p[1] > AY0 - m && p[1] < AY1 + m;
+  // ruota un punto attorno al centro del foglio
+  const turn = (p, deg) => {
+    const c = Math.cos((deg * Math.PI) / 180), s = Math.sin((deg * Math.PI) / 180), x = p[0] - CX, y = p[1] - CY;
+    return [CX + x * c - y * s, CY + x * s + y * c];
+  };
+
+  function framed(prefix, defs, body, ink, stroke) {
+    const box = `x="${AX0}" y="${AY0}" width="${AX1 - AX0}" height="${AY1 - AY0}"`, o = n1(stroke / 2 + 2);
+    defs.push(`<clipPath id="${prefix}area"><rect ${box}/></clipPath>`);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${RW} ${RH}"><defs>${defs.join('')}</defs>` +
+      `<g fill="#fff" stroke="${ink}" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round">` +
+      `<rect x="${o}" y="${o}" width="${n1(RW - 2 * o)}" height="${n1(RH - 2 * o)}" rx="6"/>` +
+      `<g clip-path="url(#${prefix}area)">${body}</g><rect ${box} fill="none"/></g></svg>`;
+  }
+
+  // ---------- intrecci: strisce che passano una sopra e una sotto ----------
+  // tratto della retta c + u·t che attraversa l'area allargata di m
+  function span(c, u, m) {
+    let t0 = -Infinity, t1 = Infinity;
+    const lo = [AX0 - m, AY0 - m], hi = [AX1 + m, AY1 + m];
+    for (let k = 0; k < 2; k++) {
+      if (Math.abs(u[k]) < 1e-9) { if (c[k] < lo[k] || c[k] > hi[k]) return null; continue; }
+      let a = (lo[k] - c[k]) / u[k], b = (hi[k] - c[k]) / u[k];
+      if (a > b) [a, b] = [b, a];
+      t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+    }
+    return t0 < t1 ? [t0, t1] : null;
+  }
+  // famiglia di strisce parallele: direzione th, passo p, scostamento off
+  function family(th, p, off, width, wave) {
+    const u = [Math.cos(th), Math.sin(th)], nv = [-u[1], u[0]], out = [];
+    for (let m = Math.ceil((-REACH - off) / p); m * p + off <= REACH; m++) {
+      const o = off + m * p, c = [CX + nv[0] * o, CY + nv[1] * o];
+      const sp = span(c, u, p + (wave ? wave.amp : 0));
+      if (!sp) continue;
+      let pts;
+      if (!wave) pts = [[c[0] + u[0] * sp[0], c[1] + u[1] * sp[0]], [c[0] + u[0] * sp[1], c[1] + u[1] * sp[1]]];
+      else {
+        pts = [];
+        const step = wave.len / 4;
+        for (let t = Math.floor(sp[0] / step) * step; t < sp[1] + step; t += step) {
+          const h = wave.amp * Math.sin((2 * Math.PI * t) / wave.len);
+          pts.push([c[0] + u[0] * t + nv[0] * h, c[1] + u[1] * t + nv[1] * h]);
+        }
+      }
+      out.push({ m, w: width(m), pts, c, u });
+    }
+    return out;
+  }
+  // linea parallela alla mezzeria, scostata di d
+  function offsetPts(pts, d) {
+    const n = pts.length;
+    return pts.map((p, i) => {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)], l = dist(a, b);
+      return [p[0] - ((b[1] - a[1]) / l) * d, p[1] + ((b[0] - a[0]) / l) * d];
+    });
+  }
+  function bandPath(pts, half) {
+    const A = offsetPts(pts, half), B = offsetPts(pts, -half).reverse();
+    if (pts.length === 2) return poly(A.concat(B));
+    return 'M' + pt(A[0][0], A[0][1]) + splineSegs(A) + 'L' + pt(B[0][0], B[0][1]) + splineSegs(B) + 'Z';
+  }
+  function linePath(pts, d) {
+    const A = offsetPts(pts, d);
+    return pts.length === 2 ? 'M' + pt(A[0][0], A[0][1]) + 'L' + pt(A[1][0], A[1][1]) : spline(A);
+  }
+  function crossing(a, b) {
+    const det = a.u[0] * b.u[1] - a.u[1] * b.u[0];
+    if (Math.abs(det) < 1e-9) return null;
+    const dx = b.c[0] - a.c[0], dy = b.c[1] - a.c[1], t = (dx * b.u[1] - dy * b.u[0]) / det;
+    return [a.c[0] + a.u[0] * t, a.c[1] + a.u[1] * t];
+  }
+  // le famiglie si disegnano in ordine (l'ultima sta sopra); over(f, a, h, b) dice se la striscia a
+  // della famiglia f deve passare sopra la b della famiglia h (h > f): lì la ridisegno ritagliata sull'incrocio
+  function weaveBody(fams, over, lines, prefix, defs, stroke) {
+    let body = '';
+    fams.forEach((fam, f) => fam.forEach((s, i) => {
+      s.id = prefix + 's' + f + '_' + i;
+      let g = `<path d="${bandPath(s.pts, s.w / 2)}"/>`;
+      lines(s).forEach((o) => { g += `<path fill="none" d="${linePath(s.pts, o)}"/>`; });
+      defs.push(`<g id="${s.id}">${g}</g>`);
+      body += `<use href="#${s.id}"/>`;
+    }));
+    for (let f = 0; f < fams.length; f++) {
+      for (let h = f + 1; h < fams.length; h++) {
+        fams[h].forEach((b) => {
+          let used = false;
+          fams[f].forEach((a) => {
+            if (!over(f, a, h, b)) return;
+            const x = crossing(a, b);
+            if (!x || !inArea(x, a.w + b.w)) return;
+            body += `<use href="#${a.id}" clip-path="url(#${b.id}c)"/>`;
+            used = true;
+          });
+          if (used) defs.push(`<clipPath id="${b.id}c"><path d="${bandPath(b.pts, b.w / 2 + stroke)}"/></clipPath>`);
+        });
+      }
+    }
+    return body;
+  }
+
+  function weave(style, rng, det, prefix, defs, stroke) {
+    if (style === 'cesto') {
+      // tre famiglie a 60°: ognuna passa sopra la successiva e sotto la precedente (intreccio kagome)
+      const p = det === 1 ? rng.range(150, 168) : det === 2 ? rng.range(112, 124) : rng.range(86, 94);
+      const w = p * rng.range(0.22, 0.28), th = rng.pick([0, Math.PI / 2]);
+      const fams = [0, 1, 2].map((k) => family(th + (k * Math.PI) / 3, p, k === 0 ? p / 2 : 0, () => w));
+      let body = weaveBody(fams, (f, a, h) => h === f + 1, () => [], prefix, defs, stroke);
+      // un fiore in ogni foro esagonale
+      const hr = p / 2 - w / 2 - stroke;
+      let deco;
+      if (det === 1) deco = `<circle r="${n1(hr * 0.55)}"/>`;
+      else if (det === 2) deco = `<circle r="${n1(hr * 0.62)}"/><circle r="${n1(hr * 0.28)}"/>`;
+      else {
+        deco = '';
+        for (let k = 0; k < 6; k++) {
+          deco += `<ellipse cy="${n1(-hr * 0.5)}" rx="${n1(hr * 0.19)}" ry="${n1(hr * 0.34)}" transform="rotate(${deg(th) + 30 + 60 * k})"/>`;
+        }
+        deco += `<circle r="${n1(hr * 0.2)}"/>`;
+      }
+      defs.push(`<g id="${prefix}h">${deco}</g>`);
+      const nv = (k) => [-Math.sin(th + (k * Math.PI) / 3), Math.cos(th + (k * Math.PI) / 3)];
+      const v1 = nv(1), v2 = nv(2), dt = v1[0] * v2[1] - v1[1] * v2[0], K = Math.ceil(REACH / p) + 1;
+      for (let a = -K; a <= K; a++) {
+        for (let b = -K; b <= K; b++) {
+          const s1 = (a + 0.5) * p, s2 = (b + 0.5) * p;
+          const c = [CX + (s1 * v2[1] - v1[1] * s2) / dt, CY + (v1[0] * s2 - s1 * v2[0]) / dt];
+          if (inArea(c, hr)) body += `<use href="#${prefix}h" transform="translate(${pt(c[0], c[1])})"/>`;
+        }
+      }
+      return body;
+    }
+    // tela e onde: due famiglie perpendicolari
+    const p = det === 1 ? rng.range(118, 136) : det === 2 ? rng.range(86, 98) : rng.range(64, 72);
+    const kind = rng.weighted({ tela: 3, saia: 2, panama: 2 });
+    const rule = {
+      tela: (i, j) => mod(i + j, 2) === 0,
+      saia: (i, j) => mod(i + j, 4) < 2,
+      panama: (i, j) => mod(Math.floor(i / 2) + Math.floor(j / 2), 2) === 0
+    }[kind];
+    const alt = rng.chance(0.3), wb = p * rng.range(0.66, 0.78);
+    const width = (m) => (alt && mod(m, 2) ? wb * 0.55 : wb);
+    const th = rng.chance(style === 'onde' ? 0.25 : 0.4) ? Math.PI / 4 : 0;
+    let wh = null, wv = null;
+    if (style === 'onde') {
+      wh = { amp: p * rng.range(0.13, 0.19), len: 2 * p };
+      if (rng.chance(0.5)) wv = { amp: p * rng.range(0.1, 0.15), len: 2 * p };
+    }
+    const fams = [family(th, p, p / 2, width, wh), family(th + Math.PI / 2, p, p / 2, width, wv)];
+    const lines = (s) => (det === 1 ? [] : det === 2 ? [0] : [-s.w * 0.22, s.w * 0.22]);
+    return weaveBody(fams, (f, a, h, b) => rule(a.m, b.m), lines, prefix, defs, stroke);
+  }
+
+  // ---------- muri ----------
+  function bricks(rng, det) {
+    const h = det === 1 ? 76 : det === 2 ? 56 : 42;
+    const g = Math.max(7, h * 0.15);
+    const kind = rng.weighted({ correre: 3, fiammingo: 2, spina: 2, cesto: 2, reticolato: 1 });
+    const cells = [];
+    let rot = 0;
+    if (kind === 'correre' || kind === 'fiammingo') {
+      // a correre: ogni fila sfalsata; fiammingo: un mattone lungo e uno di testa
+      const Lb = h * (kind === 'correre' ? rng.range(2, 2.6) : 2.2);
+      const period = kind === 'correre' ? Lb : Lb * 1.5;
+      const shift = kind === 'correre' ? Lb * rng.pick([0.5, 0.5, 1 / 3]) : Lb * 0.75;
+      for (let r = Math.floor((AY0 - CY) / h) - 1; CY + r * h - h / 2 < AY1 + h; r++) {
+        const y = CY + r * h - h / 2, base = CX - Lb / 2 + mod(r * shift, period);
+        for (let x = base - Math.ceil((base - AX0) / period + 1) * period; x < AX1 + period; x += period) {
+          cells.push([x, y, Lb, h]);
+          if (kind === 'fiammingo') cells.push([x + Lb, y, Lb / 2, h]);
+        }
+      }
+    } else if (kind === 'spina') {
+      // spina di pesce: mattoni 2:1 a gradini, ruotati di 45°
+      rot = 45;
+      const K = Math.ceil(REACH / h) + 2, M2 = Math.ceil(REACH / (2 * h)) + 2;
+      for (let k = -K; k <= K; k++) {
+        for (let m = -M2; m <= M2; m++) {
+          const x = CX + (k + 2 * m) * h, y = CY + (k - 2 * m) * h;
+          cells.push([x, y, 2 * h, h], [x + 2 * h, y - h, h, 2 * h]);
+        }
+      }
+    } else if (kind === 'cesto') {
+      // coppie di mattoni alternate in orizzontale e in verticale
+      rot = rng.chance(0.35) ? 45 : 0;
+      const B = 2 * h, K = Math.ceil(REACH / B) + 1;
+      for (let i = -K; i <= K; i++) {
+        for (let j = -K; j <= K; j++) {
+          const x = CX + i * B - h, y = CY + j * B - h;
+          if (mod(i + j, 2)) cells.push([x, y, B, h], [x, y + h, B, h]);
+          else cells.push([x, y, h, B], [x + h, y, h, B]);
+        }
+      }
+    } else {
+      // opus reticulatum: blocchetti quadrati messi a rombo
+      rot = 45;
+      const q = h * 1.3, K = Math.ceil(REACH / q) + 1;
+      for (let i = -K; i <= K; i++) for (let j = -K; j <= K; j++) cells.push([CX + i * q - q / 2, CY + j * q - q / 2, q, q]);
+    }
+    const decoP = det === 1 ? 0 : det === 2 ? 0.12 : 0.22;
+    let body = '';
+    for (const [x, y, w, hh] of cells) {
+      if (!inArea(turn([x + w / 2, y + hh / 2], rot), Math.max(w, hh))) continue;
+      const bx = x + g / 2, by = y + g / 2, bw = w - g, bh = hh - g, short = Math.min(bw, bh);
+      body += `<rect x="${n1(bx)}" y="${n1(by)}" width="${n1(bw)}" height="${n1(bh)}" rx="${n1(g * 0.6)}"/>`;
+      if (decoP && rng.chance(decoP)) {
+        if (rng.chance(0.5)) {
+          const k = short * 0.26;
+          body += `<rect x="${n1(bx + k)}" y="${n1(by + k)}" width="${n1(bw - 2 * k)}" height="${n1(bh - 2 * k)}" rx="${n1(k * 0.4)}"/>`;
+        } else {
+          const n = Math.max(bw, bh) > short * 1.5 ? 3 : 1, rr = short * 0.13;
+          for (let i = 0; i < n; i++) {
+            const f = (i + 1) / (n + 1);
+            const cx = bw >= bh ? bx + bw * f : bx + bw / 2, cy = bw >= bh ? by + bh / 2 : by + bh * f;
+            body += `<circle cx="${n1(cx)}" cy="${n1(cy)}" r="${n1(rr)}"/>`;
+          }
+        }
+      }
+    }
+    return rot ? `<g transform="rotate(${rot} ${CX} ${CY})">${body}</g>` : body;
+  }
+
+  // celle di Voronoi (ritagliate sul rettangolo box) per ogni punto
+  function voronoi(sites, box) {
+    const rect = [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]];
+    return sites.map((s, i) => {
+      const order = [];
+      sites.forEach((q, j) => { if (j !== i) order.push([j, (q[0] - s[0]) ** 2 + (q[1] - s[1]) ** 2]); });
+      order.sort((a, b) => a[1] - b[1]);
+      let cell = rect;
+      for (const [j, d2] of order) {
+        let far = 0;
+        for (const v of cell) far = Math.max(far, (v[0] - s[0]) ** 2 + (v[1] - s[1]) ** 2);
+        if (d2 > 4 * far) break;
+        const q = sites[j], nx = q[0] - s[0], ny = q[1] - s[1];
+        cell = clipHalf(cell, nx, ny, (nx * (q[0] + s[0]) + ny * (q[1] + s[1])) / 2);
+        if (cell.length < 3) break;
+      }
+      return cell;
+    });
+  }
+
+  function stones(rng, det) {
+    const s = det === 1 ? 150 : det === 2 ? 108 : 80;
+    const g = Math.max(8, s * 0.1);
+    const box = [AX0 - s * 1.5, AY0 - s * 1.5, AX1 + s * 1.5, AY1 + s * 1.5];
+    let sites = [];
+    if (rng.chance(0.5)) {
+      // ciottoli: griglia esagonale mossa, poi regolarizzata
+      for (let r = 0, y = box[1]; y <= box[3]; r++, y += s * 0.866) {
+        for (let x = box[0] + (r % 2 ? s / 2 : 0); x <= box[2]; x += s) {
+          sites.push([x + rng.range(-0.38, 0.38) * s, y + rng.range(-0.38, 0.38) * s]);
+        }
+      }
+      sites = voronoi(sites, box).map((c, i) => (c.length > 2 ? centroid(c) : sites[i]));
+    } else {
+      // pietre a filari di altezza variabile
+      for (let y = box[1]; y <= box[3];) {
+        const rh = s * rng.range(0.65, 1.15);
+        for (let x = box[0] - rng.range(0, s); x <= box[2];) {
+          const w = s * rng.range(0.8, 1.9);
+          sites.push([x + w / 2, y + rh / 2 + rng.range(-0.12, 0.12) * rh]);
+          x += w;
+        }
+        y += rh;
+      }
+    }
+    let body = '';
+    voronoi(sites, box).forEach((c) => {
+      if (c.length < 3 || !inArea(centroid(c), s)) return;
+      const ins = inset(c, g / 2);
+      if (!ins || ins.length < 3 || Math.abs(area(ins)) < s * s * 0.04) return;
+      body += `<path d="${roundPoly(ins, s * 0.22)}"/>`;
+    });
+    return body;
+  }
+
+  // piastrelle con piccoli rosoni: quelli sugli angoli si completano con le piastrelle vicine
+  function tiles(seed, rng, det, prefix, defs, stroke) {
+    const cols = det + 1, T = (AX1 - AX0) / cols, g = Math.max(6, T * 0.03), rx = n1(g * 0.8);
+    const rosette = (key, r, sym, rings) => {
+      const id = prefix + 'r' + key, k = r / 478;
+      const m = mandalaParts({ seed: seed + '#' + key, sym, detail: 1, rings, style: rng.pick(['fiorito', 'geometrico', 'misto']), v: ENGINE }, id + '_');
+      defs.push(...m.defs, `<g id="${id}" stroke-width="${(stroke / k).toFixed(2)}">${m.body}</g>`);
+      return (x, y) => `<use href="#${id}" transform="translate(${pt(x, y)}) scale(${k.toFixed(4)})"/>`;
+    };
+    let content = '';
+    if (rng.chance(0.5)) {
+      const c = rosette('c', T * 0.42, rng.pick([8, 12, 16]), 3), k = rosette('k', T * 0.27, rng.pick([8, 12]), 2);
+      content = c(T / 2, T / 2) + k(0, 0) + k(T, 0) + k(0, T) + k(T, T);
+    } else {
+      const k = rosette('k', T * 0.48, rng.pick([8, 12, 16]), 3), c = rosette('c', T * 0.2, 8, 2);
+      content = k(0, 0) + k(T, 0) + k(0, T) + k(T, T) + c(T / 2, T / 2);
+    }
+    const sq = `x="${n1(g / 2)}" y="${n1(g / 2)}" width="${n1(T - g)}" height="${n1(T - g)}" rx="${rx}"`;
+    defs.push(`<clipPath id="${prefix}tc"><rect ${sq}/></clipPath>`,
+      `<g id="${prefix}t"><rect ${sq}/><g clip-path="url(#${prefix}tc)">${content}</g><rect ${sq} fill="none"/></g>`);
+    let body = '';
+    const y0 = CY - T / 2 - Math.ceil((CY - T / 2 - AY0) / T) * T;
+    for (let y = y0; y < AY1; y += T) {
+      for (let i = 0; i < cols; i++) body += `<use href="#${prefix}t" transform="translate(${pt(AX0 + i * T, y)})"/>`;
+    }
+    return body;
+  }
+
+  // ---------- tassellature alla Escher ----------
+  // trasformazioni affini [a b c d e f], come in SVG
+  const Mx = {
+    mul: (A, B) => [A[0] * B[0] + A[2] * B[1], A[1] * B[0] + A[3] * B[1], A[0] * B[2] + A[2] * B[3],
+      A[1] * B[2] + A[3] * B[3], A[0] * B[4] + A[2] * B[5] + A[4], A[1] * B[4] + A[3] * B[5] + A[5]],
+    ap: (A, p) => [A[0] * p[0] + A[2] * p[1] + A[4], A[1] * p[0] + A[3] * p[1] + A[5]],
+    inv: (A) => {
+      const d = A[0] * A[3] - A[1] * A[2], a = A[3] / d, b = -A[1] / d, c = -A[2] / d, e = A[0] / d;
+      return [a, b, c, e, -(a * A[4] + c * A[5]), -(b * A[4] + e * A[5])];
+    },
+    tr: (x, y) => [1, 0, 0, 1, x, y],
+    rot: (th, x, y) => {
+      const c = Math.cos(th), s = Math.sin(th);
+      return [c, s, -s, c, x - c * x + s * y, y - s * x - c * y];
+    }
+  };
+  const orient = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  // il contorno non deve incrociarsi
+  function isSimple(ring) {
+    const n = ring.length;
+    for (let i = 0; i < n; i++) {
+      const a = ring[i], b = ring[(i + 1) % n];
+      for (let j = i + 2; j < n; j++) {
+        if (i === 0 && j === n - 1) continue;
+        const c = ring[j], d = ring[(j + 1) % n];
+        if (orient(a, b, c) * orient(a, b, d) < 0 && orient(c, d, a) * orient(c, d, b) < 0) return false;
+      }
+    }
+    return true;
+  }
+  // ...e non deve avere strozzature più strette di gap
+  function isRoomy(ring, gap) {
+    const n = ring.length, acc = [0];
+    for (let i = 1; i <= n; i++) acc.push(acc[i - 1] + dist(ring[i - 1], ring[i % n]));
+    const tot = acc[n];
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const along = Math.min(acc[j] - acc[i], tot - acc[j] + acc[i]);
+        if (along > gap * 3 && dist(ring[i], ring[j]) < gap) return false;
+      }
+    }
+    return true;
+  }
+  function segDist(p, a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2)) : 0;
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+  }
+  function inside(p, ring) {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[i], b = ring[j];
+      if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < ((b[0] - a[0]) * (p[1] - a[1])) / (b[1] - a[1]) + a[0]) c = !c;
+    }
+    return c;
+  }
+
+  function tessellate(style, rng, det, prefix, defs) {
+    const s = det === 1 ? 290 : det === 2 ? 215 : 165;
+    const type = style === 'girandole' ? 'C4' : style === 'esagoni' ? rng.pick(['T6', 'C3']) : rng.pick(['T4', 'TG']);
+    // forma dei lati: posizioni lungo il lato e scostamenti (da moltiplicare per l'ampiezza)
+    const shapes = [0, 1, 2].map(() => {
+      const k = +rng.weighted({ 1: 2, 2: 3, 3: 2 }), sg = rng.chance(0.5) ? 1 : -1;
+      if (k === 1) return [[rng.range(0.38, 0.62), sg * rng.range(0.6, 1)]];
+      if (k === 2) {
+        return [[rng.range(0.26, 0.42), sg * rng.range(0.5, 1)],
+          [rng.range(0.58, 0.74), (rng.chance(0.75) ? -sg : sg) * rng.range(0.5, 1)]];
+      }
+      return [0.27, 0.5, 0.73].map((t, i) => [t + rng.range(-0.03, 0.03), (i % 2 ? -sg : sg) * rng.range(0.45, 0.9)]);
+    });
+    const edge = (P0, Q, sh, amp) => {
+      const dx = Q[0] - P0[0], dy = Q[1] - P0[1];
+      return [P0].concat(sh.map(([t, h]) => [P0[0] + dx * t - dy * h * amp, P0[1] + dy * t + dx * h * amp]), [Q]);
+    };
+    const tf = (A, ks) => ks.map((p) => Mx.ap(A, p));
+    const rev = (ks) => ks.slice().reverse();
+    // contorno della piastrella (lati in ordine) e trasformazioni che la portano sulle vicine
+    const build = (amp) => {
+      const E = (P0, Q, i) => edge(P0, Q, shapes[i], amp);
+      if (type === 'T4' || type === 'TG' || type === 'C4') {
+        const A = [0, 0], B = [s, 0], C = [s, s], D = [0, s];
+        if (type === 'T4') { // traslazioni: i lati opposti sono uguali
+          const e1 = E(A, B, 0), e2 = E(A, D, 1);
+          return { edges: [e1, tf(Mx.tr(s, 0), e2), rev(tf(Mx.tr(0, s), e1)), rev(e2)], gens: [Mx.tr(s, 0), Mx.tr(0, s)] };
+        }
+        if (type === 'TG') { // la fila sotto è specchiata (glissoriflessione)
+          const e1 = E(A, B, 0), e2 = E(A, D, 1), G = [-1, 0, 0, 1, s, s];
+          return { edges: [e1, tf(Mx.tr(s, 0), e2), tf(G, e1), rev(e2)], gens: [Mx.tr(s, 0), G] };
+        }
+        // girandola: quattro piastrelle ruotano di 90° attorno agli angoli A e C
+        const e1 = E(A, B, 0), e2 = E(C, B, 1), RA = Mx.rot(Math.PI / 2, 0, 0), RC = Mx.rot(-Math.PI / 2, s, s);
+        return { edges: [e1, rev(e2), tf(RC, e2), rev(tf(RA, e1))], gens: [RA, RC] };
+      }
+      const r = s * 0.62, V = [0, 1, 2, 3, 4, 5].map((i) => [r * Math.cos((Math.PI / 3) * i), r * Math.sin((Math.PI / 3) * i)]);
+      if (type === 'T6') { // esagono per traslazione
+        const e = [0, 1, 2].map((i) => E(V[i], V[i + 1], i));
+        const t = [0, 1, 2].map((i) => Mx.tr(-(V[i][0] + V[i + 1][0]), -(V[i][1] + V[i + 1][1])));
+        return { edges: [e[0], e[1], e[2], rev(tf(t[0], e[0])), rev(tf(t[1], e[1])), rev(tf(t[2], e[2]))], gens: t };
+      }
+      // esagono a rotazione (come le lucertole di Escher): lati a coppie, ruotati di 120° sul vertice comune
+      const R = (i, from, to) => Mx.rot(Math.atan2(V[to][1] - V[i][1], V[to][0] - V[i][0]) -
+        Math.atan2(V[from][1] - V[i][1], V[from][0] - V[i][0]), V[i][0], V[i][1]);
+      const c1 = E(V[1], V[0], 0), c2 = E(V[3], V[2], 1), c3 = E(V[5], V[4], 2);
+      const R1 = R(1, 0, 2), R3 = R(3, 2, 4), R5 = R(5, 4, 0);
+      return { edges: [rev(c1), tf(R1, c1), rev(c2), tf(R3, c2), rev(c3), tf(R5, c3)], gens: [R1, R3, R5] };
+    };
+    const ringOf = (edges) => {
+      const out = [];
+      edges.forEach((e) => out.push(...splineSample(e, 8).slice(1)));
+      return out;
+    };
+    // se la forma si incrocia o si strozza, riprovo con lati meno mossi
+    let tile, ring, amp = 0.3;
+    for (let tries = 0; ; tries++) {
+      tile = build(amp);
+      ring = ringOf(tile.edges);
+      if (amp === 0 || (isSimple(ring) && isRoomy(ring, s * 0.07))) break;
+      amp = tries < 8 ? amp * 0.82 : 0;
+    }
+    const outline = (edges) => 'M' + pt(edges[0][0][0], edges[0][0][1]) + edges.map((e) => splineSegs(e)).join('') + 'Z';
+    const cen = centroid(ring);
+
+    // decorazione: contorni concentrici attorno al punto più lontano dai bordi
+    const edgeDist = (p) => {
+      let m = Infinity;
+      for (let i = 0; i < ring.length; i++) m = Math.min(m, segDist(p, ring[i], ring[(i + 1) % ring.length]));
+      return m;
+    };
+    let q = cen, rin = inside(cen, ring) ? edgeDist(cen) : 0;
+    const xs = ring.map((p) => p[0]), ys = ring.map((p) => p[1]);
+    const bx = Math.min(...xs), by = Math.min(...ys), bw = Math.max(...xs) - bx, bh = Math.max(...ys) - by;
+    for (let i = 1; i < 24; i++) {
+      for (let j = 1; j < 24; j++) {
+        const c = [bx + (bw * i) / 24, by + (bh * j) / 24];
+        if (!inside(c, ring)) continue;
+        const dd = edgeDist(c);
+        if (dd > rin) { rin = dd; q = c; }
+      }
+    }
+    const sg = Math.sign(area(ring));
+    const starry = ring.every((p, i) => sg * orient(q, p, ring[(i + 1) % ring.length]) >= 0);
+    const scaled = (f) => tile.edges.map((e) => e.map((p) => [q[0] + (p[0] - q[0]) * f, q[1] + (p[1] - q[1]) * f]));
+    let deco = '', count = starry ? Math.min(det - 1, Math.floor(rin / 16) - 1) : 0;
+    while (count > 0) {
+      const f = 1 - 1 / (count + 1), inner = ringOf(scaled(f));
+      if (inner.every((p) => ring.every((r) => dist(p, r) >= 9))) break;
+      count--;
+    }
+    for (let k = 1; k <= count; k++) deco += `<path fill="none" d="${outline(scaled(1 - k / (count + 1)))}"/>`;
+    const dot = count ? (rin * 0.45) / (count + 1) : rin * 0.3;
+    if (dot > 4) deco += `<circle cx="${n1(q[0])}" cy="${n1(q[1])}" r="${n1(dot)}"/>`;
+    defs.push(`<g id="${prefix}p"><path d="${outline(tile.edges)}"/>${deco}</g>`);
+
+    // tutte le copie, a partire da quella al centro del foglio
+    const gens = tile.gens.concat(tile.gens.map(Mx.inv));
+    const seen = new Set(), queue = [Mx.tr(CX - cen[0], CY - cen[1])];
+    let body = '', placed = 0;
+    while (queue.length && placed < 2500) {
+      const T = queue.pop(), c = Mx.ap(T, cen), key = Math.round(c[0] / 4) + ',' + Math.round(c[1] / 4);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!inArea(c, s * 1.7)) continue;
+      placed++;
+      body += `<use href="#${prefix}p" transform="matrix(${T.slice(0, 4).map((v) => v.toFixed(4)).join(' ')} ${pt(T[4], T[5])})"/>`;
+      gens.forEach((G) => queue.push(Mx.mul(T, G)));
+    }
+    return body;
+  }
+
+  // ---------- forme e stili ----------
+  const FORMS = {
+    mandala:   { label: 'Mandala', def: 'misto', styles: { fiorito: 'Fiorito', geometrico: 'Geometrico', misto: 'Misto' } },
+    intreccio: { label: 'Intreccio', def: 'tela', styles: { tela: 'Tela', onde: 'Onde', cesto: 'Cesto' } },
+    muro:      { label: 'Muro', def: 'mattoni', styles: { mattoni: 'Mattoni', pietre: 'Pietre', piastrelle: 'Piastrelle' } },
+    escher:    { label: 'Escher', def: 'quadrati', styles: { quadrati: 'Quadrati', girandole: 'Girandole', esagoni: 'Esagoni' } }
+  };
+
+  /**
+   * opts: { form, seed, sym, detail (1–3), style, stroke, v }
+   * Mandala: viewBox -500..500. Le altre forme: viewBox 0 0 1000 1400 (cornice compresa).
+   */
+  function draw(opts) {
+    const form = FORMS[opts.form] ? opts.form : 'mandala';
+    if (form === 'mandala') return generate(opts);
+    const det = Math.max(1, Math.min(3, opts.detail | 0));
+    const stroke = opts.stroke || 2.4, ink = opts.ink || '#1f1f22';
+    const style = FORMS[form].styles[opts.style] ? opts.style : FORMS[form].def;
+    const rng = makeRng(form + ':' + style + ':' + String(opts.seed).trim().toLowerCase());
+    const prefix = 'm' + (++uid).toString(36) + '_', defs = [];
+    let body;
+    if (form === 'intreccio') body = weave(style, rng, det, prefix, defs, stroke);
+    else if (form === 'muro') body = style === 'mattoni' ? bricks(rng, det) : style === 'pietre' ? stones(rng, det) : tiles(opts.seed, rng, det, prefix, defs, stroke);
+    else body = tessellate(style, rng, det, prefix, defs);
+    return framed(prefix, defs, body, ink, stroke);
+  }
+
+  // posizione sul foglio A4, in millimetri
+  const layout = (form) => (FORMS[form] && form !== 'mandala' ? { x: 15, y: 15, w: 180, h: 252 } : { x: 15, y: 41, w: 180, h: 180 });
 
   const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   function randomCode() {
@@ -654,7 +1341,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     return s.slice(0, 3) + '-' + s.slice(3);
   }
 
-  const api = { generate, randomCode, styles: Object.keys(STYLES) };
+  const api = { generate, draw, layout, randomCode, forms: FORMS, ENGINE, styles: Object.keys(STYLES) };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Mandala = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -667,17 +1354,60 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
   const KEY = 'mandalario.v1';
   const SYMS = [6, 8, 8, 10, 10, 12, 12, 12, 14, 16, 16, 18, 20, 24];
+  const FORMS = Mandala.forms, ENGINE = Mandala.ENGINE;
+  const NEW_LABEL = { mandala: 'Nuovo mandala', intreccio: 'Nuovo intreccio', muro: 'Nuovo muro', escher: 'Nuova tassellatura' };
 
   const store = {
     load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
     save(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* senza memoria va bene lo stesso */ } }
   };
 
+  const validForm = (f) => (FORMS[f] ? f : 'mandala');
+  const validStyle = (f, st) => (FORMS[f].styles[st] ? st : FORMS[f].def);
+  // tutto ciò che serve a rigenerare un disegno (le voci senza versione vengono dalla prima versione)
+  const entry = (s) => {
+    const form = validForm(s.form);
+    return { form, seed: String(s.seed || 'mandala'), sym: (s.sym | 0) || 12, detail: (s.detail | 0) || 2, style: validStyle(form, s.style), v: (s.v | 0) || 1 };
+  };
+  const same = (a, b) => a.form === b.form && a.seed === b.seed && a.detail === b.detail && a.style === b.style &&
+    a.v === b.v && (a.form !== 'mandala' || a.sym === b.sym);
+
   const saved = store.load();
   const state = Object.assign({
-    seed: 'K7Q-2PX', sym: 12, detail: 2, style: 'misto', stroke: 2.4, symAuto: true, showCode: true
+    form: 'mandala', seed: 'K7Q-2PX', sym: 12, detail: 2, style: 'misto', styles: {}, stroke: 2.4, symAuto: true, showCode: true, v: ENGINE
   }, saved.settings || {});
-  let history = Array.isArray(saved.history) ? saved.history.slice(0, 12) : [];
+  if (saved.settings && !saved.settings.v) state.v = 1; // disegno della prima versione: resta uguale
+  Object.assign(state, entry(state));
+  let recent = Array.isArray(saved.history) ? saved.history.slice(0, 12).map(entry) : [];
+
+  // ---------- link condivisibili: ?f=forma&c=codice&s=simmetria&d=dettaglio&st=stile&t=tratto&v=versione ----------
+  function readLink() {
+    const q = new URLSearchParams(location.search);
+    const seed = (q.get('c') || '').trim().slice(0, 24);
+    if (!seed) return null;
+    const form = validForm(q.get('f'));
+    const out = { form, seed, style: validStyle(form, q.get('st')) };
+    const sym = parseInt(q.get('s'), 10), det = parseInt(q.get('d'), 10), t = parseFloat(q.get('t')), v = parseInt(q.get('v'), 10);
+    if (sym >= 5 && sym <= 24) out.sym = sym;
+    if (det >= 1 && det <= 3) out.detail = det;
+    if (t >= 1.4 && t <= 4.4) out.stroke = Math.round(t * 10) / 10;
+    out.v = v >= 1 ? Math.min(v, ENGINE) : 1;
+    out.showCode = q.get('cod') !== '0';
+    return out;
+  }
+  function linkQuery(s) {
+    const q = new URLSearchParams({ f: s.form, c: s.seed });
+    if (s.form === 'mandala') q.set('s', s.sym);
+    q.set('d', s.detail); q.set('st', s.style); q.set('t', s.stroke); q.set('v', s.v);
+    if (!s.showCode) q.set('cod', '0');
+    return q.toString();
+  }
+  function syncURL() {
+    try { history.replaceState(null, '', location.pathname + '?' + linkQuery(state)); } catch (e) { /* in anteprima può non riuscire */ }
+  }
+  const fromLink = readLink();
+  if (fromLink) Object.assign(state, fromLink);
+  state.styles[state.form] = state.style;
 
   if (embedded) {
     document.querySelectorAll('.app-only').forEach((el) => { el.hidden = true; });
@@ -686,22 +1416,51 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 
   const mm = (v) => (v * 180 / 1000).toFixed(1).replace('.', ',') + ' mm'; // 1000 unità = 180 mm
   const detName = { 1: 'semplice', 2: 'medio', 3: 'ricco' };
-  const captionText = (s) => `MANDALARIO · ${s.seed.toUpperCase()} · ${s.sym} SETTORI · ${detName[s.detail].toUpperCase()}`;
+  const styleName = (s) => FORMS[s.form].label + ' ' + FORMS[s.form].styles[s.style];
+  const captionText = (s) => ['MANDALARIO', s.seed, styleName(s)]
+    .concat(s.form === 'mandala' ? [s.sym + ' settori'] : [], [detName[s.detail]]).join(' · ').toUpperCase();
+  const metaText = (s) => (s.form === 'mandala' ? s.sym + ' settori' : FORMS[s.form].label + ' · ' + FORMS[s.form].styles[s.style]);
 
-  function svgFor(s, ink) {
-    return Mandala.generate({ seed: s.seed, sym: s.sym, detail: s.detail, style: s.style, stroke: s.stroke, ink });
+  // i disegni già calcolati (le miniature si ridisegnano spesso)
+  const cache = new Map();
+  function svgFor(s, stroke, ink) {
+    const opts = { form: s.form, seed: s.seed, sym: s.sym, detail: s.detail, style: s.style, v: s.v, stroke, ink };
+    const k = JSON.stringify(opts);
+    let svg = cache.get(k);
+    if (!svg) {
+      svg = Mandala.draw(opts);
+      if (cache.size > 40) cache.clear();
+      cache.set(k, svg);
+    }
+    return svg;
   }
 
   function persist() {
-    store.save({ settings: state, history });
+    store.save({ settings: state, history: recent });
+  }
+
+  function buildStyles() {
+    const box = $('styles');
+    box.innerHTML = '';
+    Object.keys(FORMS[state.form].styles).forEach((v, i) => {
+      box.insertAdjacentHTML('beforeend', `<input type="radio" name="sty" id="sty${i}" value="${v}"><label for="sty${i}">${FORMS[state.form].styles[v]}</label>`);
+    });
+    box.querySelector(`input[value="${state.style}"]`).checked = true;
+    box.querySelectorAll('input').forEach((r) => r.addEventListener('change', (e) => {
+      state.style = state.styles[state.form] = e.target.value;
+      render(true); pushRecent();
+    }));
   }
 
   function syncControls() {
     $('code').value = state.seed;
+    document.querySelector(`input[name="form"][value="${state.form}"]`).checked = true;
+    $('btnNewLabel').textContent = NEW_LABEL[state.form];
+    $('symField').hidden = state.form !== 'mandala';
     $('sym').value = state.sym; $('symOut').textContent = state.sym;
     $('symAuto').checked = state.symAuto;
     $('det' + state.detail).checked = true;
-    document.querySelector(`input[name="sty"][value="${state.style}"]`).checked = true;
+    buildStyles();
     $('stroke').value = state.stroke; $('strokeOut').textContent = mm(state.stroke);
     $('showCode').checked = state.showCode;
   }
@@ -709,11 +1468,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   function render(animate) {
     const art = $('art');
     const draw = () => {
-      art.innerHTML = svgFor(state);
-      art.setAttribute('aria-label', 'Mandala da colorare, codice ' + state.seed);
+      art.innerHTML = svgFor(state, state.stroke);
+      art.setAttribute('aria-label', 'Disegno da colorare, codice ' + state.seed);
+      $('sheet').classList.toggle('rect', state.form !== 'mandala');
       $('caption').textContent = captionText(state);
       $('caption').hidden = !state.showCode;
-      $('metaSym').textContent = state.sym + ' settori';
+      $('metaSym').textContent = metaText(state);
       art.classList.remove('fade');
     };
     if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -721,43 +1481,52 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       setTimeout(draw, 140);
     } else draw();
     persist();
+    syncURL();
   }
 
-  function pushHistory() {
-    const entry = { seed: state.seed, sym: state.sym, detail: state.detail, style: state.style };
-    history = history.filter((h) => !(h.seed === entry.seed && h.sym === entry.sym && h.detail === entry.detail && h.style === entry.style));
-    history.unshift(entry);
-    history = history.slice(0, 12);
+  function pushRecent() {
+    const e = entry(state);
+    recent = [e].concat(recent.filter((h) => !same(h, e))).slice(0, 12);
     renderThumbs();
+    persist();
   }
 
   function renderThumbs() {
     const box = $('thumbs');
     box.innerHTML = '';
-    $('emptyThumbs').hidden = history.length > 0;
-    history.forEach((h) => {
+    $('emptyThumbs').hidden = recent.length > 0;
+    const cur = entry(state);
+    recent.forEach((h) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'thumb';
-      b.setAttribute('aria-label', 'Riapri il mandala ' + h.seed);
-      const same = h.seed === state.seed && h.sym === state.sym && h.detail === state.detail && h.style === state.style;
-      b.setAttribute('aria-current', same ? 'true' : 'false');
-      b.innerHTML = svgFor(Object.assign({}, h, { stroke: 7 }));
+      b.setAttribute('aria-label', 'Riapri il disegno ' + h.seed);
+      b.setAttribute('aria-current', same(h, cur) ? 'true' : 'false');
+      b.innerHTML = svgFor(h, 7);
       b.addEventListener('click', () => {
         Object.assign(state, h);
+        state.styles[h.form] = h.style;
         syncControls(); render(true); renderThumbs();
       });
       box.appendChild(b);
     });
   }
 
-  function newMandala() {
+  function newDrawing() {
     state.seed = Mandala.randomCode();
-    if (state.symAuto) state.sym = SYMS[Math.floor(Math.random() * SYMS.length)];
-    syncControls(); render(true); pushHistory();
+    state.v = ENGINE;
+    if (state.form === 'mandala' && state.symAuto) state.sym = SYMS[Math.floor(Math.random() * SYMS.length)];
+    syncControls(); render(true); pushRecent();
   }
 
   // ---------- comandi ----------
-  $('btnNew').addEventListener('click', newMandala);
+  $('btnNew').addEventListener('click', newDrawing);
+
+  document.querySelectorAll('input[name="form"]').forEach((r) => r.addEventListener('change', (e) => {
+    state.styles[state.form] = state.style;
+    state.form = e.target.value;
+    state.style = validStyle(state.form, state.styles[state.form]);
+    syncControls(); render(true); pushRecent();
+  }));
 
   let codeTimer;
   $('code').addEventListener('input', (e) => {
@@ -768,24 +1537,21 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
       state.seed = v; render(false);
     }, 180);
   });
-  $('code').addEventListener('change', () => { if (state.seed) pushHistory(); });
+  $('code').addEventListener('change', () => { if (state.seed) pushRecent(); });
 
   $('sym').addEventListener('input', (e) => {
     state.sym = +e.target.value; $('symOut').textContent = state.sym;
     state.symAuto = false; $('symAuto').checked = false;
     render(false);
   });
-  $('sym').addEventListener('change', pushHistory);
+  $('sym').addEventListener('change', pushRecent);
   $('symAuto').addEventListener('change', (e) => { state.symAuto = e.target.checked; persist(); });
 
   document.querySelectorAll('input[name="det"]').forEach((r) => r.addEventListener('change', (e) => {
-    state.detail = +e.target.value; render(true); pushHistory();
-  }));
-  document.querySelectorAll('input[name="sty"]').forEach((r) => r.addEventListener('change', (e) => {
-    state.style = e.target.value; render(true); pushHistory();
+    state.detail = +e.target.value; render(true); pushRecent();
   }));
   $('stroke').addEventListener('input', (e) => {
-    state.stroke = +e.target.value; $('strokeOut').textContent = mm(state.stroke); render(false);
+    state.stroke = Math.round(e.target.value * 10) / 10; $('strokeOut').textContent = mm(state.stroke); render(false);
   });
   $('showCode').addEventListener('change', (e) => { state.showCode = e.target.checked; render(false); });
 
@@ -793,21 +1559,33 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     const t = $('toast'); t.textContent = msg; t.classList.add('show');
     clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
   };
+  const copy = (text, ok, fallback) => {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast(ok), fallback);
+    else fallback();
+  };
 
   $('btnCopy').addEventListener('click', () => {
-    const v = state.seed;
-    const fallback = () => { const i = $('code'); i.focus(); i.select(); toast('Codice selezionato'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(v).then(() => toast('Codice copiato'), fallback);
-    } else fallback();
+    copy(state.seed, 'Codice copiato', () => { const i = $('code'); i.focus(); i.select(); toast('Codice selezionato'); });
+  });
+
+  // sul telefono apre il menu di condivisione, sul computer copia il link
+  $('btnShare').addEventListener('click', () => {
+    syncURL();
+    const url = location.href;
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+      navigator.share({ title: 'Mandalario', text: 'Un disegno da colorare: ' + styleName(state).toLowerCase() + ', codice ' + state.seed, url }).catch(() => {});
+      return;
+    }
+    copy(url, 'Link copiato', () => toast('Copia l’indirizzo dalla barra del browser'));
   });
 
   // ---------- esportazione (solo nell'app) ----------
   function sheetSVG() {
-    // A4 in millimetri, mandala 180 mm, come nella stampa
-    const inner = svgFor(state).replace('<svg ', '<svg x="15" y="41" width="180" height="180" ');
+    // A4 in millimetri, con il disegno nella stessa posizione della stampa
+    const lay = Mandala.layout(state.form);
+    const inner = svgFor(state, state.stroke).replace('<svg ', `<svg x="${lay.x}" y="${lay.y}" width="${lay.w}" height="${lay.h}" `);
     const cap = state.showCode
-      ? `<text x="105" y="283" text-anchor="middle" font-family="Menlo, Consolas, monospace" font-size="2.8" letter-spacing=".25" fill="#888">${captionText(state)}</text>`
+      ? `<text x="105" y="283" text-anchor="middle" font-family="Menlo, Consolas, monospace" font-size="2.8" letter-spacing=".25" fill="#888">${captionText(state).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>`
       : '';
     return `<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">` +
       `<rect width="210" height="297" fill="#fff"/>${inner}${cap}</svg>`;
@@ -818,7 +1596,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
-  const fileBase = () => 'mandala-' + state.seed.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  const fileBase = () => state.form + '-' + state.seed.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 
   $('btnPrint').addEventListener('click', () => window.print());
   $('btnSvg').addEventListener('click', () => {
@@ -844,7 +1622,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   // ---------- avvio ----------
   syncControls();
   render(false);
-  if (!history.length) pushHistory(); else renderThumbs();
+  if (fromLink || !recent.length) pushRecent(); else renderThumbs();
 
   if (!embedded && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });

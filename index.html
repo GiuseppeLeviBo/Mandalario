@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2E3A8C" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12131A" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mandalario">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Mandalario</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Genera mandala casuali da stampare e colorare.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Young+Serif&display=swap">
+<style>
+/* Layout: il foglio A4 è l'oggetto principale a sinistra; i comandi a destra, impilati sotto su telefono. */
+:root {
+  --bg: #E9ECE6;
+  --surface: #F7F8F5;
+  --ink: #1C1D26;
+  --muted: #5B5F6E;
+  --line: #CFD3CA;
+  --accent: #2E3A8C;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCE0F4;
+  --marigold: #C9861A;
+  --paper: #FFFFFF;
+  --shadow: 0 1px 2px rgba(28,29,38,.08), 0 12px 32px -12px rgba(28,29,38,.28);
+  --f-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12131A; --surface: #1B1D26; --ink: #ECEDF3; --muted: #9EA2B4; --line: #2F3242;
+    --accent: #9AA6FF; --accent-ink: #11142B; --accent-soft: #262B4D; --marigold: #E7AC48;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12131A; --surface: #1B1D26; --ink: #ECEDF3; --muted: #9EA2B4; --line: #2F3242;
+  --accent: #9AA6FF; --accent-ink: #11142B; --accent-soft: #262B4D; --marigold: #E7AC48;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--f-body);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+
+header.top {
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 18px;
+}
+.mark { width: 40px; height: 40px; flex: none; color: var(--accent); }
+.brand h1 {
+  font: 400 28px/1.05 var(--f-display);
+  margin: 0; letter-spacing: -0.01em;
+}
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  align-items: start;
+}
+
+/* ---------- foglio ---------- */
+.stage { display: grid; gap: 10px; justify-items: center; min-width: 0; }
+.sheet-meta {
+  width: 100%; max-width: 560px;
+  display: flex; justify-content: space-between; gap: 12px;
+  font: 500 11px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted);
+}
+.sheet {
+  width: 100%; max-width: 560px;
+  aspect-ratio: 210 / 297;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 7.14%;           /* 15 mm su 210 mm */
+}
+.sheet .art {
+  width: 100%;
+  margin-top: 19.5%;          /* centrato otticamente sul foglio */
+  aspect-ratio: 1;
+  transition: opacity .25s ease;
+}
+.sheet .art svg { width: 100%; height: 100%; display: block; }
+.sheet .art.fade { opacity: .15; }
+.sheet .caption {
+  position: absolute; left: 0; right: 0; bottom: 5.5%;
+  text-align: center;
+  font: 500 clamp(8px, 1.7vw, 10.5px)/1 var(--f-mono);
+  letter-spacing: .08em; color: #8A8C94;
+}
+.sheet .caption[hidden] { display: none; }
+
+/* ---------- pannello ---------- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  display: grid; gap: 20px;
+  min-width: 0;
+}
+.actions { display: grid; gap: 8px; }
+.btn {
+  appearance: none; border: 1px solid var(--line); background: transparent;
+  border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.btn.primary {
+  background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  padding: 14px 16px; font-size: 16px;
+}
+.btn.primary:hover { filter: brightness(1.08); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+.note {
+  font-size: 13px; color: var(--muted); margin: 0;
+  background: var(--accent-soft); border-radius: 8px; padding: 10px 12px;
+}
+
+.field { display: grid; gap: 8px; }
+.label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+}
+.label output { font: 500 13px var(--f-mono); color: var(--ink); letter-spacing: 0; text-transform: none; }
+
+.code-row { display: flex; gap: 8px; }
+.code-row input {
+  flex: 1; min-width: 0;
+  font: 500 17px var(--f-mono); letter-spacing: .08em;
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+  background: var(--paper); color: #1C1D26;
+}
+.code-row .btn { padding: 9px 11px; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+.seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px;
+}
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label {
+  text-align: center; padding: 7px 4px; border-radius: 7px; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--muted);
+}
+.seg input:checked + label { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+
+.recent h2 {
+  font: 400 18px var(--f-display); margin: 0 0 10px;
+}
+.thumbs {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px;
+}
+.thumb {
+  appearance: none; border: 1px solid var(--line); background: var(--paper);
+  border-radius: 8px; padding: 4px; cursor: pointer; aspect-ratio: 1;
+}
+.thumb svg { width: 100%; height: 100%; display: block; }
+.thumb[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.empty { font-size: 13px; color: var(--muted); margin: 0; }
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg);
+  padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 500;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.toast.show { opacity: 1; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .panel { max-width: 560px; width: 100%; justify-self: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet .art, .btn, .toast { transition: none; }
+}
+
+/* ---------- stampa: solo il foglio ---------- */
+@page { size: A4 portrait; margin: 0; }
+@media print {
+  html, body { height: auto; }
+  .sheet { height: 296mm !important; }
+  :root { padding: 0 !important; }
+  body { background: #fff; }
+  header.top, .panel, .sheet-meta, .toast { display: none !important; }
+  .wrap, .layout, .stage { display: block; padding: 0; margin: 0; max-width: none; }
+  .sheet {
+    width: 210mm; height: 297mm; max-width: none; aspect-ratio: auto;
+    box-shadow: none; border-radius: 0; padding: 0 15mm;
+    break-after: avoid;
+  }
+  .sheet .art { width: 180mm; height: 180mm; margin-top: 41mm; opacity: 1 !important; }
+  .sheet .caption { font-size: 8pt; bottom: 16mm; color: #888; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <svg class="mark" viewBox="-50 -50 100 100" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round">
+        <circle r="46"/><circle r="12"/>
+        <g id="mk-p"><path d="M0 -14 C9 -20 9 -34 0 -44 C-9 -34 -9 -20 0 -14Z"/></g>
+        <use href="#mk-p" transform="rotate(45)"/><use href="#mk-p" transform="rotate(90)"/>
+        <use href="#mk-p" transform="rotate(135)"/><use href="#mk-p" transform="rotate(180)"/>
+        <use href="#mk-p" transform="rotate(225)"/><use href="#mk-p" transform="rotate(270)"/>
+        <use href="#mk-p" transform="rotate(315)"/>
+      </g>
+    </svg>
+    <div class="brand">
+      <h1>Mandalario</h1>
+      <p>Mandala sempre nuovi, pronti da stampare e colorare.</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="Anteprima del foglio">
+      <div class="sheet-meta"><span>Foglio A4 · 210 × 297 mm</span><span id="metaSym">12 settori</span></div>
+      <div class="sheet" id="sheet">
+        <div class="art" id="art" role="img" aria-label="Mandala da colorare"></div>
+        <div class="caption" id="caption"></div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Impostazioni">
+      <div class="actions">
+        <button class="btn primary" id="btnNew" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>
+          Nuovo mandala
+        </button>
+        <div class="row3 app-only">
+          <button class="btn" id="btnPrint" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg>
+            Stampa
+          </button>
+          <button class="btn" id="btnPng" type="button">PNG</button>
+          <button class="btn" id="btnSvg" type="button">SVG</button>
+        </div>
+        <p class="note preview-only" hidden>Questa è l'anteprima. Stampa e salvataggio funzionano nell'app installata.</p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="code">Codice</label>
+        <div class="code-row">
+          <input id="code" type="text" autocomplete="off" spellcheck="false" maxlength="24" aria-describedby="codeHint">
+          <button class="btn" id="btnCopy" type="button" aria-label="Copia il codice" title="Copia il codice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+          </button>
+        </div>
+        <p class="hint" id="codeHint">Lo stesso codice rigenera lo stesso mandala. Prova anche un nome.</p>
+      </div>
+
+      <div class="field">
+        <div class="label"><label for="sym">Simmetria</label><output id="symOut" for="sym">12</output></div>
+        <input id="sym" type="range" min="5" max="24" step="1" value="12">
+        <label class="check"><input id="symAuto" type="checkbox" checked> Cambiala a ogni nuovo mandala</label>
+      </div>
+
+      <div class="field">
+        <span class="label" id="detLbl">Dettaglio</span>
+        <div class="seg" role="radiogroup" aria-labelledby="detLbl">
+          <input type="radio" name="det" id="det1" value="1"><label for="det1">Semplice</label>
+          <input type="radio" name="det" id="det2" value="2" checked><label for="det2">Medio</label>
+          <input type="radio" name="det" id="det3" value="3"><label for="det3">Ricco</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" id="styLbl">Stile</span>
+        <div class="seg" role="radiogroup" aria-labelledby="styLbl">
+          <input type="radio" name="sty" id="styF" value="fiorito"><label for="styF">Fiorito</label>
+          <input type="radio" name="sty" id="styG" value="geometrico"><label for="styG">Geometrico</label>
+          <input type="radio" name="sty" id="styM" value="misto" checked><label for="styM">Misto</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label"><label for="stroke">Tratto</label><output id="strokeOut" for="stroke">0,4 mm</output></div>
+        <input id="stroke" type="range" min="1.4" max="4.4" step="0.2" value="2.4">
+      </div>
+
+      <label class="check"><input id="showCode" type="checkbox" checked> Stampa il codice in fondo al foglio</label>
+
+      <div class="recent">
+        <h2>Recenti</h2>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="empty" id="emptyThumbs" hidden>I mandala che generi compaiono qui.</p>
+      </div>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Mandalario — generatore di mandala vettoriali con simmetria radiale.
+   Tutto deterministico: stesso codice + stesse impostazioni = stesso mandala. */
+(function (root) {
+  'use strict';
+
+  // ---------- numeri casuali riproducibili ----------
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return function () {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+    };
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function makeRng(seed) {
+    const r = mulberry32(xmur3(String(seed).trim().toLowerCase() || 'mandala')());
+    return {
+      f: r,
+      range: (a, b) => a + (b - a) * r(),
+      int: (a, b) => Math.floor(a + (b - a + 1) * r()),
+      pick: (arr) => arr[Math.floor(r() * arr.length)],
+      chance: (p) => r() < p,
+      weighted: (table) => {
+        let tot = 0; for (const k in table) tot += table[k];
+        let x = r() * tot;
+        for (const k in table) { x -= table[k]; if (x <= 0) return k; }
+        return Object.keys(table)[0];
+      }
+    };
+  }
+
+  // ---------- geometria ----------
+  const n1 = (v) => Math.round(v * 10) / 10;
+  // punto polare: angolo misurato dall'alto, in senso orario
+  const P = (r, t) => n1(r * Math.sin(t)) + ' ' + n1(-r * Math.cos(t));
+  // coordinate locali del settore a angolo 0: u = radiale, v = tangenziale
+  const L = (u, v) => n1(v) + ' ' + n1(-u);
+  const deg = (rad) => n1((rad * 180) / Math.PI);
+  const path = (d, extra) => `<path${extra ? ' ' + extra : ''} d="${d}"/>`;
+  const circle = (r, t, rad) => {
+    const x = n1(r * Math.sin(t)), y = n1(-r * Math.cos(t));
+    return `<circle cx="${x}" cy="${y}" r="${n1(rad)}"/>`;
+  };
+  // chiude una forma tornando lungo l'arco di raggio ra da +w a -w
+  const baseArc = (ra, w) => `A${n1(ra)} ${n1(ra)} 0 0 0 ${P(ra, -w)}Z`;
+
+  // ---------- motivi (disegnati nel settore centrato su angolo 0) ----------
+  function petalPath(ra, rb, w, type) {
+    const d = rb - ra;
+    let s;
+    if (type === 'tonda') {
+      s = `M${P(ra, -w)}C${P(ra + d * 0.55, -w * 1.12)} ${P(rb, -w * 0.78)} ${P(rb, 0)}` +
+          `C${P(rb, w * 0.78)} ${P(ra + d * 0.55, w * 1.12)} ${P(ra, w)}`;
+    } else if (type === 'loto') {
+      s = `M${P(ra, -w)}C${P(ra + d * 0.3, -w * 1.18)} ${P(ra + d * 0.62, -w * 0.95)} ${P(ra + d * 0.76, -w * 0.4)}` +
+          `C${P(ra + d * 0.86, -w * 0.08)} ${P(rb - d * 0.04, -w * 0.03)} ${P(rb, 0)}` +
+          `C${P(rb - d * 0.04, w * 0.03)} ${P(ra + d * 0.86, w * 0.08)} ${P(ra + d * 0.76, w * 0.4)}` +
+          `C${P(ra + d * 0.62, w * 0.95)} ${P(ra + d * 0.3, w * 1.18)} ${P(ra, w)}`;
+    } else { // punta
+      s = `M${P(ra, -w)}C${P(ra + d * 0.45, -w * 1.1)} ${P(ra + d * 0.85, -w * 0.42)} ${P(rb, 0)}` +
+          `C${P(ra + d * 0.85, w * 0.42)} ${P(ra + d * 0.45, w * 1.1)} ${P(ra, w)}`;
+    }
+    return path(s + baseArc(ra, w));
+  }
+
+  function bumpPath(ra, h, w) {
+    return path(`M${P(ra, -w)}C${P(ra + h * 1.33, -w)} ${P(ra + h * 1.33, w)} ${P(ra, w)}` + baseArc(ra, w));
+  }
+
+  const MOTIFS = {
+    petali(g) {
+      const { r1, r2, a, rng, det } = g, d = r2 - r1;
+      const w = a * rng.range(0.72, 0.96);
+      const type = rng.pick(['punta', 'tonda', 'loto']);
+      let s = '';
+      if (rng.chance(0.55)) { // petali di fondo, sfalsati di mezzo settore
+        s += `<g transform="rotate(${deg(a)})">${petalPath(r1, r1 + d * 0.78, w * 0.85, type === 'loto' ? 'punta' : type)}</g>`;
+      }
+      s += petalPath(r1, r2, w, type);
+      const levels = det === 1 ? 1 : det === 2 ? 2 : 3;
+      for (let j = 1; j < levels; j++) {
+        s += petalPath(r1, r1 + d * (1 - 0.27 * j), w * (1 - 0.3 * j), j % 2 ? 'punta' : type);
+      }
+      if (det >= 2 && rng.chance(0.45)) {
+        const rr = Math.min(d * 0.045, (r1 + d * 0.86) * w * 0.18);
+        if (rr > 3) s += circle(r1 + d * 0.87, 0, rr);
+      }
+      return s;
+    },
+
+    foglie(g) {
+      const { r1, r2, a, rng, det } = g, d = r2 - r1;
+      const w = a * rng.range(0.7, 0.9);
+      let s = petalPath(r1, r2, w, 'punta');
+      s += path(`M${P(r1 + d * 0.04, 0)}L${P(r1 + d * 0.9, 0)}`, 'fill="none"');
+      const veins = det + 1;
+      for (let i = 1; i <= veins; i++) {
+        const t = i / (veins + 1);
+        const u = r1 + d * (0.08 + 0.72 * t);
+        const u2 = Math.min(u + d * 0.16, r1 + d * 0.92);
+        const reach = w * 0.62 * (1 - t * 0.75);
+        s += path(`M${P(u, 0)}L${P(u2, -reach)}M${P(u, 0)}L${P(u2, reach)}`, 'fill="none"');
+      }
+      return s;
+    },
+
+    archi(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1;
+      const levels = Math.min(3, det + 1);
+      let s = '';
+      for (let j = 0; j < levels; j++) {
+        const aa = a * (1 - j * 0.27) * 0.98, h = d * (1 - j * 0.25);
+        s += path(`M${P(r1, -aa)}C${P(r1 + h * 0.62, -aa)} ${P(r1 + h * 0.86, -aa * 0.32)} ${P(r1 + h, 0)}` +
+                  `C${P(r1 + h * 0.86, aa * 0.32)} ${P(r1 + h * 0.62, aa)} ${P(r1, aa)}` + baseArc(r1, aa));
+      }
+      return s;
+    },
+
+    smerli(g) {
+      const { r1, r2, a, det, rng } = g, d = r2 - r1;
+      let s = bumpPath(r1, d * 0.9, a);
+      if (det >= 2) s += bumpPath(r1, d * 0.58, a * 0.62);
+      if (det >= 3) s += bumpPath(r1, d * 0.3, a * 0.34);
+      if (det >= 2 && rng.chance(0.6)) {
+        const rr = Math.min(d * 0.1, (r1 + d * 0.8) * a * 0.22);
+        if (rr > 3) s += circle(r1 + d * 0.84, a, rr);
+      }
+      return s;
+    },
+
+    gocce(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1;
+      const ut = r1 + d * 0.05, uc0 = r1 + d * 0.64;
+      const rho = Math.min(d * 0.3, uc0 * Math.sin(a) * 0.82);
+      const uc = Math.min(uc0, r2 - rho);
+      const m = ut + 0.45 * (uc - ut);
+      let s = path(`M${L(ut, 0)}C${L(m, -rho * 0.25)} ${L(uc - rho * 0.7, -rho)} ${L(uc, -rho)}` +
+                   `A${n1(rho)} ${n1(rho)} 0 0 1 ${L(uc, rho)}` +
+                   `C${L(uc - rho * 0.7, rho)} ${L(m, rho * 0.25)} ${L(ut, 0)}Z`);
+      if (det >= 2) s += `<circle cx="0" cy="${n1(-(uc + rho * 0.08))}" r="${n1(rho * 0.48)}"/>`;
+      if (det >= 3) {
+        const rr = Math.min(d * 0.09, (r1 + d * 0.3) * a * 0.3);
+        if (rr > 3) s += circle(r1 + d * 0.3, a, rr);
+      }
+      return s;
+    },
+
+    triangoli(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1;
+      let s = path(`M${P(r1, -a)}L${P(r2, 0)}L${P(r1, a)}` + baseArc(r1, a));
+      if (det >= 2) s += path(`M${P(r1 + d * 0.16, -a * 0.52)}L${P(r2 - d * 0.24, 0)}L${P(r1 + d * 0.16, a * 0.52)}Z`);
+      if (det >= 3) {
+        const rr = Math.min(d * 0.11, (r2 - d * 0.28) * a * 0.3);
+        if (rr > 3) s += circle(r2 - d * 0.28, a, rr);
+      }
+      return s;
+    },
+
+    rombi(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1, rm = (r1 + r2) / 2;
+      let s = path(`M${P(r1, 0)}L${P(rm, -a)}L${P(r2, 0)}L${P(rm, a)}Z`);
+      if (det >= 2) s += path(`M${P(rm - d * 0.27, 0)}L${P(rm, -a * 0.55)}L${P(rm + d * 0.27, 0)}L${P(rm, a * 0.55)}Z`);
+      if (det >= 3) {
+        const rr = Math.min(d * 0.07, rm * a * 0.2);
+        if (rr > 2.5) s += circle(rm, 0, rr);
+      }
+      return s;
+    },
+
+    perle(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1, rm = (r1 + r2) / 2;
+      const rho = Math.min(d * 0.36, rm * Math.sin(a) * 0.82);
+      let s = circle(rm, 0, rho);
+      if (det >= 2 && rho > 9) s += circle(rm, 0, rho * 0.5);
+      const small = Math.min(rho * 0.42, d * 0.2);
+      if (small > 3 && rm * Math.sin(a) - rho > small * 0.6) s += circle(rm, a, small);
+      return s;
+    },
+
+    fascia(g) {
+      const { r1, r2, a, det } = g, d = r2 - r1, rm = (r1 + r2) / 2;
+      let s = path(`M${P(r1, -a)}A${n1(r1)} ${n1(r1)} 0 0 1 ${P(r1, a)}`, 'fill="none"');
+      s += path(`M${P(r1, -a)}L${P(r2, -a)}`, 'fill="none"');
+      if (det >= 2) {
+        const rr = Math.min(d * 0.28, rm * a * 0.5);
+        if (rr > 3) s += circle(rm, 0, rr);
+      }
+      return s;
+    }
+  };
+
+  const STYLES = {
+    fiorito:    { petali: 5, foglie: 3, archi: 3, smerli: 3, gocce: 3, perle: 2, fascia: 1, triangoli: 0.5, rombi: 0.5 },
+    geometrico: { triangoli: 4, rombi: 4, perle: 3, fascia: 3, archi: 2, smerli: 1.5, petali: 1, gocce: 1, foglie: 0 },
+    misto:      { petali: 3, foglie: 2, archi: 2.5, smerli: 2.5, gocce: 2, triangoli: 2.5, rombi: 2.5, perle: 2, fascia: 1.5 }
+  };
+  const EDGE_MOTIFS = ['petali', 'foglie', 'archi', 'smerli', 'gocce', 'triangoli'];
+  const OVERSHOOT = { petali: 1, foglie: 1, archi: 1, gocce: 1 };
+  const NEEDS_BORDER = { perle: 1, fascia: 1, rombi: 1 };
+  const STRAIGHT = { triangoli: 1, rombi: 1 };
+
+  let uid = 0;
+
+  /**
+   * opts: { seed, sym (4–32), detail (1–3), style, stroke }
+   * Restituisce una stringa SVG con viewBox -500..500.
+   */
+  function generate(opts) {
+    const seed = opts.seed;
+    const N = Math.max(4, Math.min(32, opts.sym | 0));
+    const det = Math.max(1, Math.min(3, opts.detail | 0));
+    const style = STYLES[opts.style] || STYLES.misto;
+    const ink = opts.ink || '#1f1f22';
+    const stroke = opts.stroke || 2.4;
+    const rng = makeRng(seed);
+    const prefix = 'm' + (++uid).toString(36) + '_';
+
+    const R = 478;
+    const ringCount = det === 1 ? rng.int(4, 5) : det === 2 ? rng.int(5, 7) : rng.int(7, 9);
+    const r0 = R * (det === 1 ? rng.range(0.13, 0.16) : rng.range(0.09, 0.12));
+    const minCell = det === 1 ? 46 : det === 2 ? 30 : 20;
+
+    // spessori degli anelli
+    const weights = [];
+    for (let i = 0; i < ringCount; i++) weights.push(rng.range(0.7, 1.3) * (1 + i * 0.07));
+    const wsum = weights.reduce((x, y) => x + y, 0);
+    const edges = [r0];
+    for (let i = 0; i < ringCount; i++) edges.push(edges[i] + ((R - r0) * weights[i]) / wsum);
+
+    // pianificazione degli anelli
+    const rings = [];
+    let prev = '';
+    for (let i = 0; i < ringCount; i++) {
+      const r1 = edges[i], r2 = edges[i + 1], d = r2 - r1, rm = (r1 + r2) / 2;
+      const outer = i === ringCount - 1;
+      let motif;
+      for (let tries = 0; tries < 12; tries++) {
+        motif = rng.weighted(style);
+        if (outer && EDGE_MOTIFS.indexOf(motif) < 0) continue;
+        if (motif === 'fascia' && d > (R - r0) * 0.16) continue;
+        if (motif === prev) continue;
+        break;
+      }
+      prev = motif;
+      let n = N;
+      if (det >= 2 && i >= ringCount / 2 && N * 2 <= 40 && rng.chance(0.38)) n = N * 2;
+      while ((rm * 2 * Math.PI) / n < minCell && n % 2 === 0 && n > 4) n /= 2;
+      // i motivi a lati dritti hanno bisogno di settori stretti, se no diventano poligoni
+      if (STRAIGHT[motif]) while (n < 12 && (rm * 2 * Math.PI) / (n * 2) >= minCell * 0.8) n *= 2;
+      if (STRAIGHT[motif] && n < 8) motif = outer ? 'petali' : 'smerli';
+      const border = !outer && (NEEDS_BORDER[motif] ? true : rng.chance(0.6));
+      const spin = rng.chance(0.5);
+      let r2e = r2;
+      if (!outer && OVERSHOOT[motif] && rng.chance(0.5)) {
+        const dOut = edges[i + 2] - edges[i + 1];
+        r2e = r2 + Math.min(dOut * 0.2, d * 0.25, 24);
+      }
+      // consuma sempre lo stesso numero di estrazioni, per stabilità
+      const sub = makeRng(seed + '#' + i + motif);
+      rings.push({ r1, r2, r2e, n, motif, border, spin, sub });
+    }
+
+    // disegno: dall'esterno verso il centro, ogni livello copre quello sotto
+    const defs = [];
+    let body = '';
+    for (let i = ringCount - 1; i >= 0; i--) {
+      const g = rings[i];
+      if (g.border) body += `<circle r="${n1(g.r2)}"/>`;
+      const a = Math.PI / g.n;
+      const content = MOTIFS[g.motif]({ r1: g.r1, r2: g.r2e, a, rng: g.sub, det });
+      const id = prefix + i;
+      defs.push(`<g id="${id}">${content}</g>`);
+      const off = g.spin ? 180 / g.n : 0;
+      for (let k = 0; k < g.n; k++) {
+        body += `<use href="#${id}" transform="rotate(${n1((360 * k) / g.n + off)})"/>`;
+      }
+    }
+
+    // rosone centrale
+    const crng = makeRng(seed + '#centro');
+    body += `<circle r="${n1(r0)}"/>`;
+    let m = N;
+    while ((r0 * 2 * Math.PI) / m < minCell * 0.9 && m % 2 === 0 && m > 4) m /= 2;
+    const ca = Math.PI / m;
+    const cid = prefix + 'c';
+    defs.push(`<g id="${cid}">${petalPath(r0 * 0.34, r0 * 0.94, ca * 0.9, crng.pick(['tonda', 'punta']))}</g>`);
+    for (let k = 0; k < m; k++) body += `<use href="#${cid}" transform="rotate(${n1((360 * k) / m)})"/>`;
+    body += `<circle r="${n1(r0 * 0.36)}"/>`;
+    if (det >= 2) body += `<circle r="${n1(r0 * 0.16)}"/>`;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-500 -500 1000 1000">` +
+      `<defs>${defs.join('')}</defs>` +
+      `<g fill="#fff" stroke="${ink}" stroke-width="${stroke}" stroke-linejoin="round" stroke-linecap="round">${body}</g></svg>`;
+  }
+
+  const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  function randomCode() {
+    let s = '';
+    const buf = new Uint32Array(6);
+    (root.crypto || globalThis.crypto).getRandomValues(buf);
+    for (let i = 0; i < 6; i++) s += ALPHABET[buf[i] % ALPHABET.length];
+    return s.slice(0, 3) + '-' + s.slice(3);
+  }
+
+  const api = { generate, randomCode, styles: Object.keys(STYLES) };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.Mandala = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const embedded = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+  const KEY = 'mandalario.v1';
+  const SYMS = [6, 8, 8, 10, 10, 12, 12, 12, 14, 16, 16, 18, 20, 24];
+
+  const store = {
+    load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } },
+    save(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { /* senza memoria va bene lo stesso */ } }
+  };
+
+  const saved = store.load();
+  const state = Object.assign({
+    seed: 'K7Q-2PX', sym: 12, detail: 2, style: 'misto', stroke: 2.4, symAuto: true, showCode: true
+  }, saved.settings || {});
+  let history = Array.isArray(saved.history) ? saved.history.slice(0, 12) : [];
+
+  if (embedded) {
+    document.querySelectorAll('.app-only').forEach((el) => { el.hidden = true; });
+    document.querySelectorAll('.preview-only').forEach((el) => { el.hidden = false; });
+  }
+
+  const mm = (v) => (v * 180 / 1000).toFixed(1).replace('.', ',') + ' mm'; // 1000 unità = 180 mm
+  const detName = { 1: 'semplice', 2: 'medio', 3: 'ricco' };
+  const captionText = (s) => `MANDALARIO · ${s.seed.toUpperCase()} · ${s.sym} SETTORI · ${detName[s.detail].toUpperCase()}`;
+
+  function svgFor(s, ink) {
+    return Mandala.generate({ seed: s.seed, sym: s.sym, detail: s.detail, style: s.style, stroke: s.stroke, ink });
+  }
+
+  function persist() {
+    store.save({ settings: state, history });
+  }
+
+  function syncControls() {
+    $('code').value = state.seed;
+    $('sym').value = state.sym; $('symOut').textContent = state.sym;
+    $('symAuto').checked = state.symAuto;
+    $('det' + state.detail).checked = true;
+    document.querySelector(`input[name="sty"][value="${state.style}"]`).checked = true;
+    $('stroke').value = state.stroke; $('strokeOut').textContent = mm(state.stroke);
+    $('showCode').checked = state.showCode;
+  }
+
+  function render(animate) {
+    const art = $('art');
+    const draw = () => {
+      art.innerHTML = svgFor(state);
+      art.setAttribute('aria-label', 'Mandala da colorare, codice ' + state.seed);
+      $('caption').textContent = captionText(state);
+      $('caption').hidden = !state.showCode;
+      $('metaSym').textContent = state.sym + ' settori';
+      art.classList.remove('fade');
+    };
+    if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      art.classList.add('fade');
+      setTimeout(draw, 140);
+    } else draw();
+    persist();
+  }
+
+  function pushHistory() {
+    const entry = { seed: state.seed, sym: state.sym, detail: state.detail, style: state.style };
+    history = history.filter((h) => !(h.seed === entry.seed && h.sym === entry.sym && h.detail === entry.detail && h.style === entry.style));
+    history.unshift(entry);
+    history = history.slice(0, 12);
+    renderThumbs();
+  }
+
+  function renderThumbs() {
+    const box = $('thumbs');
+    box.innerHTML = '';
+    $('emptyThumbs').hidden = history.length > 0;
+    history.forEach((h) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'thumb';
+      b.setAttribute('aria-label', 'Riapri il mandala ' + h.seed);
+      const same = h.seed === state.seed && h.sym === state.sym && h.detail === state.detail && h.style === state.style;
+      b.setAttribute('aria-current', same ? 'true' : 'false');
+      b.innerHTML = svgFor(Object.assign({}, h, { stroke: 7 }));
+      b.addEventListener('click', () => {
+        Object.assign(state, h);
+        syncControls(); render(true); renderThumbs();
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function newMandala() {
+    state.seed = Mandala.randomCode();
+    if (state.symAuto) state.sym = SYMS[Math.floor(Math.random() * SYMS.length)];
+    syncControls(); render(true); pushHistory();
+  }
+
+  // ---------- comandi ----------
+  $('btnNew').addEventListener('click', newMandala);
+
+  let codeTimer;
+  $('code').addEventListener('input', (e) => {
+    clearTimeout(codeTimer);
+    codeTimer = setTimeout(() => {
+      const v = e.target.value.trim();
+      if (!v) return;
+      state.seed = v; render(false);
+    }, 180);
+  });
+  $('code').addEventListener('change', () => { if (state.seed) pushHistory(); });
+
+  $('sym').addEventListener('input', (e) => {
+    state.sym = +e.target.value; $('symOut').textContent = state.sym;
+    state.symAuto = false; $('symAuto').checked = false;
+    render(false);
+  });
+  $('sym').addEventListener('change', pushHistory);
+  $('symAuto').addEventListener('change', (e) => { state.symAuto = e.target.checked; persist(); });
+
+  document.querySelectorAll('input[name="det"]').forEach((r) => r.addEventListener('change', (e) => {
+    state.detail = +e.target.value; render(true); pushHistory();
+  }));
+  document.querySelectorAll('input[name="sty"]').forEach((r) => r.addEventListener('change', (e) => {
+    state.style = e.target.value; render(true); pushHistory();
+  }));
+  $('stroke').addEventListener('input', (e) => {
+    state.stroke = +e.target.value; $('strokeOut').textContent = mm(state.stroke); render(false);
+  });
+  $('showCode').addEventListener('change', (e) => { state.showCode = e.target.checked; render(false); });
+
+  const toast = (msg) => {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  };
+
+  $('btnCopy').addEventListener('click', () => {
+    const v = state.seed;
+    const fallback = () => { const i = $('code'); i.focus(); i.select(); toast('Codice selezionato'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(v).then(() => toast('Codice copiato'), fallback);
+    } else fallback();
+  });
+
+  // ---------- esportazione (solo nell'app) ----------
+  function sheetSVG() {
+    // A4 in millimetri, mandala 180 mm, come nella stampa
+    const inner = svgFor(state).replace('<svg ', '<svg x="15" y="41" width="180" height="180" ');
+    const cap = state.showCode
+      ? `<text x="105" y="283" text-anchor="middle" font-family="Menlo, Consolas, monospace" font-size="2.8" letter-spacing=".25" fill="#888">${captionText(state)}</text>`
+      : '';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297">` +
+      `<rect width="210" height="297" fill="#fff"/>${inner}${cap}</svg>`;
+  }
+  function download(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  const fileBase = () => 'mandala-' + state.seed.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+
+  $('btnPrint').addEventListener('click', () => window.print());
+  $('btnSvg').addEventListener('click', () => {
+    download(new Blob([sheetSVG()], { type: 'image/svg+xml' }), fileBase() + '.svg');
+    toast('SVG salvato');
+  });
+  $('btnPng').addEventListener('click', () => {
+    const W = 2480, H = 3508; // A4 a 300 dpi
+    const img = new Image();
+    const url = URL.createObjectURL(new Blob([sheetSVG()], { type: 'image/svg+xml' }));
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => { if (b) { download(b, fileBase() + '.png'); toast('PNG salvato (A4, 300 dpi)'); } }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); toast('Non sono riuscito a creare il PNG. Prova con SVG.'); };
+    img.src = url;
+  });
+
+  // ---------- avvio ----------
+  syncControls();
+  render(false);
+  if (!history.length) pushHistory(); else renderThumbs();
+
+  if (!embedded && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+})();
+</script>
+
+</body>
+</html>

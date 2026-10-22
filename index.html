@@ -358,7 +358,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   'use strict';
 
   // versione del motore: i link la riportano, così un disegno condiviso resta uguale anche dopo gli aggiornamenti
-  const ENGINE = 2;
+  const ENGINE = 3;
 
   // ---------- numeri casuali riproducibili ----------
   function xmur3(str) {
@@ -1133,7 +1133,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     return body;
   }
 
-  // ---------- tassellature alla Escher ----------
+  // ---------- tassellature alla Escher (versioni 1 e 2 del motore; i link vecchi le usano ancora) ----------
   // trasformazioni affini [a b c d e f], come in SVG
   const Mx = {
     mul: (A, B) => [A[0] * B[0] + A[2] * B[1], A[1] * B[0] + A[3] * B[1], A[0] * B[2] + A[2] * B[3],
@@ -1163,15 +1163,16 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     }
     return true;
   }
-  // ...e non deve avere strozzature più strette di gap
-  function isRoomy(ring, gap) {
+  // ...e non deve avere strozzature più strette di gap (vicino agli angoli indicati sono ammesse)
+  function isRoomy(ring, gap, corners) {
     const n = ring.length, acc = [0];
     for (let i = 1; i <= n; i++) acc.push(acc[i - 1] + dist(ring[i - 1], ring[i % n]));
     const tot = acc[n];
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const along = Math.min(acc[j] - acc[i], tot - acc[j] + acc[i]);
-        if (along > gap * 3 && dist(ring[i], ring[j]) < gap) return false;
+        if (along > gap * 3 && dist(ring[i], ring[j]) < gap &&
+          !(corners && corners.some((c) => dist(ring[i], c) < gap * 4 && dist(ring[j], c) < gap * 4))) return false;
       }
     }
     return true;
@@ -1190,7 +1191,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     return c;
   }
 
-  function tessellate(style, rng, det, prefix, defs) {
+  function tessellateV2(style, rng, det, prefix, defs) {
     const s = det === 1 ? 290 : det === 2 ? 215 : 165;
     const type = style === 'girandole' ? 'C4' : style === 'esagoni' ? rng.pick(['T6', 'C3']) : rng.pick(['T4', 'TG']);
     // forma dei lati: posizioni lungo il lato e scostamenti (da moltiplicare per l'ampiezza)
@@ -1302,12 +1303,357 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     return body;
   }
 
+  // ---------- tassellature alla Escher, dalla versione 3 del motore ----------
+  // Ogni tipo è un poligono di partenza con le regole che legano i suoi lati (tipi isoedrici di Heesch):
+  //   ['T', i, j] traslazione          ['G', i, j] glissoriflessione
+  //   ['R', i, j] rotazione attorno al vertice comune ai lati i e j = i + 1
+  //   ['C', i]    lato simmetrico rispetto al suo punto medio (mezzo giro)
+  //   ['M', i]    asse di simmetria: il lato resta dritto, non si disegna e la figura si specchia
+  const RAD = Math.PI / 180;
+  const pol = (r, a) => [r * Math.cos(a * RAD), r * Math.sin(a * RAD)];
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const mapPts = (A, ps) => ps.map((p) => Mx.ap(A, p));
+  const backwards = (ps) => ps.slice().reverse();
+  const shake = (rng, ps, j) => ps.map(([x, y]) => [x + rng.range(-j, j), y + rng.range(-j, j)]);
+  // rotazione attorno a v che porta a in c
+  const rotMap = (v, a, c) => Mx.rot(Math.atan2(c[1] - v[1], c[0] - v[0]) - Math.atan2(a[1] - v[1], a[0] - v[0]), v[0], v[1]);
+  // isometria che inverte l'orientamento e porta p in p2, q in q2 (con p = p2 e q = q2 è una riflessione)
+  function glideMap(p, p2, q, q2) {
+    const a = Math.atan2(q[1] - p[1], q[0] - p[0]) + Math.atan2(q2[1] - p2[1], q2[0] - p2[0]), c = Math.cos(a), s = Math.sin(a);
+    return [c, s, s, -c, p2[0] - (c * p[0] + s * p[1]), p2[1] - (s * p[0] - c * p[1])];
+  }
+  const HEX = [0, 1, 2, 3, 4, 5].map((i) => pol(1, 60 * i));
+  const parallelogram = (rng) => {
+    const w = rng.range(0.8, 1.25), sh = rng.range(-0.3, 0.3);
+    return [[0, 0], [w, 0], [w + sh, 1], [sh, 1]];
+  };
+  const TILE_TYPES = {
+    // traslazioni, mezzi giri e glissoriflessioni (p1, p2, pg, pgg)
+    TTTT: { rel: [['T', 0, 2], ['T', 1, 3]], poly: parallelogram },
+    TGTG: { rel: [['G', 0, 2], ['T', 1, 3]], poly: parallelogram },
+    TCTC: { rel: [['T', 0, 2], ['C', 1], ['C', 3]], poly: parallelogram },
+    CCCC: { rel: [['C', 0], ['C', 1], ['C', 2], ['C', 3]], poly: (rng) => shake(rng, [[0, 0], [1, 0], [1, 1], [0, 1]], 0.18) },
+    CGCG: { rel: [['C', 0], ['G', 1, 3], ['C', 2]], poly: (rng) => { const w = rng.range(0.8, 1.3); return [[0, 0], [w, 0], [w, 1], [0, 1]]; } },
+    CCC: { rel: [['C', 0], ['C', 1], ['C', 2]], poly: (rng) => shake(rng, [[0, 0], [1, 0], pol(1, 60)], 0.15) },
+    CGG: { rel: [['G', 2, 0], ['C', 1]], poly: (rng) => [[0, 0], [1, 0], pol(1, rng.range(60, 120))] },
+    TTTTTT: { rel: [['T', 0, 3], ['T', 1, 4], ['T', 2, 5]], poly: (rng) => { const h = shake(rng, HEX.slice(0, 3), 0.12); return h.concat(h.map(([x, y]) => [-x, -y])); } },
+    TCCTCC: {
+      rel: [['T', 0, 3], ['C', 1], ['C', 2], ['C', 4], ['C', 5]],
+      poly: (rng) => {
+        const w = rng.range(0.8, 1.2), t = [rng.range(-0.2, 0.2), 1], v3 = [w + t[0], t[1]];
+        return [[0, 0], [w, 0], [(w + v3[0]) / 2 + rng.range(0.25, 0.45), v3[1] / 2 + rng.range(-0.12, 0.12)], v3, t,
+          [t[0] / 2 - rng.range(0.25, 0.45), t[1] / 2 + rng.range(-0.12, 0.12)]];
+      }
+    },
+    // rotazioni attorno ai vertici (p3, p4, p6)
+    C4C4C4C4: { rel: [['R', 3, 0], ['R', 1, 2]], poly: () => [[0, 0], [1, 0], [1, 1], [0, 1]] },
+    C3C3C6C6: { rel: [['R', 3, 0], ['R', 1, 2]], poly: () => [[0, 0], pol(1, -60), [2, 0], pol(1, 60)] },
+    CC3C3: { rel: [['R', 2, 0], ['C', 1]], poly: () => [[0, 0], [1, 0], pol(1, 120)] },
+    CC4C4: { rel: [['R', 2, 0], ['C', 1]], poly: () => [[0, 0], [1, 0], [0, 1]] },
+    CC6C6: { rel: [['R', 2, 0], ['C', 1]], poly: () => [[0, 0], [1, 0], pol(1, 60)] },
+    C3C3C3C3C3C3: {
+      rel: [['R', 0, 1], ['R', 2, 3], ['R', 4, 5]],
+      poly: (rng) => { // i vertici 1, 3, 5 restano equilateri, il vertice 0 si muove e trascina il 2 e il 4
+        const V = HEX.slice();
+        V[0] = [V[0][0] + rng.range(-0.18, 0.18), V[0][1] + rng.range(-0.18, 0.18)];
+        V[2] = Mx.ap(rotMap(HEX[1], HEX[0], HEX[2]), V[0]);
+        V[4] = Mx.ap(rotMap(HEX[3], HEX[2], HEX[4]), V[2]);
+        return V;
+      }
+    },
+    // figure simmetriche: si disegna mezza figura (un quarto per cmm) accanto al suo asse (pmg, p4g, p31m, cmm)
+    PMG: { rel: [['T', 0, 2], ['C', 1], ['M', 3]], poly: (rng) => { const w = rng.range(0.55, 0.9); return [[0, 0], [w, 0], [w, 1], [0, 1]]; }, parts: 2 },
+    P4G: { rel: [['R', 2, 0], ['M', 1]], poly: () => [[0, 0], [1, 0], [0, 1]], parts: 2 },
+    P31M: { rel: [['R', 2, 0], ['M', 1]], poly: () => [[0, 0], [1, 0], pol(1, 120)], parts: 2 },
+    CMM: { rel: [['M', 0], ['C', 1], ['M', 2]], poly: (rng) => [[0, 0], [rng.range(0.8, 1.25), 0], [0, 1]], parts: 4, fold: 2 }
+  };
+  const ESCHER_SETS = {
+    quadrati: ['TTTT', 'TGTG', 'TCTC', 'CCCC', 'CGCG', 'CCC', 'CGG'],
+    girandole: ['C4C4C4C4', 'C3C3C6C6', 'CC3C3', 'CC4C4', 'CC6C6'],
+    esagoni: ['TTTTTT', 'TCCTCC', 'C3C3C3C3C3C3'],
+    specchi: ['PMG', 'P4G', 'P31M', 'CMM']
+  };
+
+  // tratti di Bézier [p1, c1, c2, p2] della spline di Catmull-Rom aperta (come splineSegs)
+  function crSegs(pts) {
+    const n = pts.length, get = (i) => pts[Math.max(0, Math.min(n - 1, i))], out = [];
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = get(i - 1), p1 = get(i), p2 = get(i + 1), p3 = get(i + 2);
+      out.push([p1, [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6], p2]);
+    }
+    return out;
+  }
+  const segD = (b) => 'C' + pt(b[1][0], b[1][1]) + ' ' + pt(b[2][0], b[2][1]) + ' ' + pt(b[3][0], b[3][1]);
+  // k punti lungo il tratto, escluso quello iniziale
+  function segPts(b, k) {
+    const out = [];
+    for (let j = 1; j <= k; j++) {
+      const t = j / k, u = 1 - t, a = u * u * u, c1 = 3 * u * u * t, c2 = 3 * u * t * t, e = t * t * t;
+      out.push([a * b[0][0] + c1 * b[1][0] + c2 * b[2][0] + e * b[3][0], a * b[0][1] + c1 * b[1][1] + c2 * b[2][1] + e * b[3][1]]);
+    }
+    return out;
+  }
+  const segLen = (b) => { let l = 0, p = b[0]; segPts(b, 6).forEach((q) => { l += dist(p, q); p = q; }); return l; };
+  const ringDist = (p, ring) => {
+    let m = Infinity;
+    for (let i = 0; i < ring.length; i++) m = Math.min(m, segDist(p, ring[i], ring[(i + 1) % ring.length]));
+    return m;
+  };
+  // il punto interno più lontano dai bordi: [x, y, distanza]
+  function poleOf(ring) {
+    const xs = ring.map((p) => p[0]), ys = ring.map((p) => p[1]);
+    const bx = Math.min(...xs), by = Math.min(...ys), bw = Math.max(...xs) - bx, bh = Math.max(...ys) - by;
+    let best = [bx + bw / 2, by + bh / 2, 0];
+    for (let i = 1; i < 22; i++) {
+      for (let j = 1; j < 22; j++) {
+        const c = [bx + (bw * i) / 22, by + (bh * j) / 22];
+        if (!inside(c, ring)) continue;
+        const d = ringDist(c, ring);
+        if (d > best[2]) best = [c[0], c[1], d];
+      }
+    }
+    return best;
+  }
+  // una regione chiusa fatta di tratti {b, anchor, mirror}: contorno, punti campione
+  function region(segs) {
+    const ring = [];
+    segs.forEach((g) => ring.push(...segPts(g.b, 8)));
+    return { segs, ring, d: 'M' + pt(segs[0].b[0][0], segs[0].b[0][1]) + segs.map((g) => segD(g.b)).join('') + 'Z' };
+  }
+
+  // la piastrella: lati, trasformazioni che la portano sulle vicine, tratti del contorno
+  function escherTile(name, rng, s) {
+    const type = TILE_TYPES[name];
+    let V = type.poly(rng);
+    const k = s / Math.sqrt(Math.abs(area(V)) * (type.parts || 1));
+    V = V.map(([x, y]) => [x * k, y * k]);
+    const n = V.length, at = (i) => V[mod(i, n)];
+    // forma dei lati liberi: posizioni lungo il lato e scostamenti
+    const drawShapes = () => type.rel.map((r) => {
+      const kk = r[0] === 'C' ? rng.int(1, 2) : +rng.weighted({ 1: 2, 2: 3, 3: 3, 4: 2 });
+      const sg = rng.chance(0.5) ? 1 : -1, alt = rng.chance(0.65), out = [];
+      for (let q = 0; q < kk; q++) {
+        const t = Math.max(0.16, Math.min(0.84, (q + 1 + rng.range(-0.3, 0.3)) / (kk + 1)));
+        out.push([t, (alt && q % 2 ? -sg : sg) * rng.range(0.4, 1)]);
+      }
+      return out.sort((a, b) => a[0] - b[0]);
+    });
+    let shapes = drawShapes();
+    const curve = (a, b, sh, amp) => [a].concat(sh.map(([t, h]) =>
+      [a[0] + (b[0] - a[0]) * t - (b[1] - a[1]) * h * amp, a[1] + (b[1] - a[1]) * t + (b[0] - a[0]) * h * amp]), [b]);
+    const build = (amp) => {
+      const E = [], mid = [], mirror = [], gens = [], mirrors = [];
+      type.rel.forEach((r, idx) => {
+        const i = r[1], a = at(i), b = at(i + 1);
+        if (r[0] === 'M') {
+          E[i] = [a, lerp(a, b, 0.5), b]; mid[i] = 1; mirror[i] = true;
+          const X = glideMap(a, a, b, b);
+          gens.push(X); mirrors.push(X);
+          return;
+        }
+        if (r[0] === 'C') {
+          const m = lerp(a, b, 0.5), H = Mx.rot(Math.PI, m[0], m[1]), h = curve(a, m, shapes[idx], amp * 1.3);
+          E[i] = h.concat(backwards(mapPts(H, h)).slice(1));
+          mid[i] = h.length - 1;
+          gens.push(H);
+          return;
+        }
+        const j = mod(r[2], n), e = curve(a, b, shapes[idx], amp);
+        const X = r[0] === 'T' ? Mx.tr(at(j + 1)[0] - a[0], at(j + 1)[1] - a[1])
+          : r[0] === 'R' ? rotMap(b, a, at(j + 1)) : glideMap(a, at(j), b, at(j + 1));
+        E[i] = e;
+        E[j] = r[0] === 'G' ? mapPts(X, e) : backwards(mapPts(X, e));
+        gens.push(X);
+      });
+      const segs = [];
+      E.forEach((e, i) => crSegs(e).forEach((b, q) => segs.push({ b, anchor: q === 0 || q === mid[i], mirror: !!mirror[i] })));
+      return Object.assign(region(segs), { gens, mirrors, corners: V });
+    };
+    // se la forma si incrocia o si strozza, riprovo con lati meno mossi o con altre forme
+    let tile, amp = 0.34;
+    for (let tries = 1; ; tries++) {
+      tile = build(amp);
+      if (amp === 0 || (isSimple(tile.ring) && isRoomy(tile.ring, s * 0.06, V))) break;
+      if (tries >= 20) amp = 0;
+      else if (tries % 5 === 0) { shapes = drawShapes(); amp = 0.34; } else amp *= 0.78;
+    }
+    return tile;
+  }
+
+  // taglia una regione con una curva tra due punti del bordo: due figure che si incastrano
+  function cutRegion(reg, rng, gap, corners) {
+    const m = reg.segs.length, acc = [0], anchors = [];
+    reg.segs.forEach((g, i) => { acc.push(acc[i] + segLen(g.b)); if (g.anchor) anchors.push(i); });
+    const tot = acc[m], pole = poleOf(reg.ring);
+    for (let tries = 0; tries < 10; tries++) {
+      const ia = rng.pick(anchors);
+      const far = anchors.filter((ib) => { const d = mod(acc[ib] - acc[ia], tot); return d > tot * 0.28 && d < tot * 0.72; });
+      if (!far.length) continue;
+      const ib = rng.pick(far), A = reg.segs[ia].b[0], B = reg.segs[ib].b[0], L = dist(A, B);
+      const wob = (p, f) => [p[0] + rng.range(-f, f) * L, p[1] + rng.range(-f, f) * L];
+      const q = wob(pole, 0.08), knots = [A, wob(lerp(A, q, 0.5), 0.16), q, wob(lerp(q, B, 0.5), 0.16), B];
+      const fwd = crSegs(knots), back = crSegs(backwards(knots)), samples = [];
+      fwd.forEach((b) => samples.push(...segPts(b, 8)));
+      if (!samples.every((p) => dist(p, A) < gap * 1.5 || dist(p, B) < gap * 1.5 ||
+        (inside(p, reg.ring) && ringDist(p, reg.ring) >= gap))) continue;
+      const part = (from, to) => { const out = []; for (let i = from; i !== to; i = (i + 1) % m) out.push(reg.segs[i]); return out; };
+      const cut = (bs) => bs.map((b, k) => ({ b, anchor: k > 0, mirror: false }));
+      const r1 = region(part(ia, ib).concat(cut(back))), r2 = region(part(ib, ia).concat(cut(fwd)));
+      if (![r1, r2].every((r) => isSimple(r.ring) && isRoomy(r.ring, gap, corners.concat([A, B])))) continue;
+      return { d: 'M' + pt(A[0], A[1]) + fwd.map(segD).join(''), regions: [r1, r2], ends: [A, B] };
+    }
+    return null;
+  }
+
+  // decorazione di una regione, ritagliata sul suo contorno
+  function decorate(kind, reg, id, rng, det, stroke, defs) {
+    const [qx, qy, rin] = poleOf(reg.ring);
+    let R = 0;
+    reg.ring.forEach((p) => { R = Math.max(R, Math.hypot(p[0] - qx, p[1] - qy)); });
+    const sp = (det === 1 ? 34 : det === 2 ? 27 : 21) * rng.range(0.9, 1.15);
+    const clip = (inner) => {
+      defs.push(`<clipPath id="${id}"><path d="${reg.d}"/></clipPath>`);
+      return `<g clip-path="url(#${id})">${inner}</g>`;
+    };
+    const turned = (inner, a) => `<g transform="rotate(${n1(a)} ${pt(qx, qy)})"><path fill="none" d="${inner}"/></g>`;
+    const sg = Math.sign(area(reg.ring));
+    const starry = reg.ring.every((p, i) => sg * orient([qx, qy], p, reg.ring[(i + 1) % reg.ring.length]) >= 0);
+    if (kind === 'anelli' && !starry) kind = rin > 14 ? 'occhio' : 'liscio';
+    if (kind === 'anelli') { // copie rimpicciolite del contorno
+      const nr = Math.max(1, Math.min(det + 1, Math.floor(rin / 13) - 1));
+      let s = '';
+      for (let k = 1; k <= nr; k++) {
+        const f = 1 - k / (nr + 1);
+        s += `<path fill="none" d="${reg.d}" stroke-width="${(stroke / f).toFixed(2)}" transform="matrix(${f.toFixed(4)} 0 0 ${f.toFixed(4)} ${pt(qx * (1 - f), qy * (1 - f))})"/>`;
+      }
+      return clip(s);
+    }
+    if (kind === 'strisce' || kind === 'onde') {
+      let s = '';
+      for (let y = -R; y <= R; y += sp) {
+        if (kind === 'strisce') s += 'M' + pt(qx - R, qy + y) + 'L' + pt(qx + R, qy + y);
+        else {
+          const pts = [];
+          for (let x = -R - sp, k = 0; x <= R + sp; x += sp, k++) pts.push([qx + x, qy + y + (k % 2 ? 1 : -1) * sp * 0.22]);
+          s += spline(pts);
+        }
+      }
+      return clip(turned(s, rng.range(0, 180)));
+    }
+    if (kind === 'squame') {
+      const r = sp * 0.62;
+      let s = '';
+      for (let j = 0, y = -R - r; y <= R + r; j++, y += r) {
+        for (let x = -R - 2 * r + (j % 2 ? r : 0); x <= R + 2 * r; x += 2 * r) s += 'M' + pt(qx + x - r, qy + y) + `A${n1(r)} ${n1(r)} 0 0 0 ` + pt(qx + x + r, qy + y);
+      }
+      return clip(turned(s, rng.pick([0, 90, 180, 270]) + rng.range(-25, 25)));
+    }
+    if (kind === 'punti') {
+      const d = sp * 1.3, rd = sp * 0.18;
+      let s = '';
+      for (let j = 0, y = -R; y <= R; j++, y += d * 0.87) {
+        for (let x = -R + (j % 2 ? d / 2 : 0); x <= R; x += d) s += `<circle cx="${n1(qx + x)}" cy="${n1(qy + y)}" r="${n1(rd)}"/>`;
+      }
+      return clip(s);
+    }
+    if (kind === 'occhio') {
+      const re = Math.min(rin * 0.5, 30);
+      if (re < 6) return '';
+      const a = rng.range(0, 2 * Math.PI), o = re * 0.3;
+      let s = `<circle cx="${n1(qx)}" cy="${n1(qy)}" r="${n1(re)}"/><circle cx="${n1(qx + o * Math.cos(a))}" cy="${n1(qy + o * Math.sin(a))}" r="${n1(re * 0.42)}"/>`;
+      if (det >= 2 && rin > re * 1.9) s = `<circle cx="${n1(qx)}" cy="${n1(qy)}" r="${n1(re * 1.5)}"/>` + s;
+      return s;
+    }
+    if (kind === 'spirale') {
+      const rr = Math.min(rin * 0.85, 64);
+      if (rr < 12) return '';
+      const turns = det === 1 ? 1.6 : 2.4, dir = rng.chance(0.5) ? 1 : -1, steps = Math.ceil(turns * 10), pts = [];
+      for (let i = 0; i <= steps; i++) {
+        const f = i / steps, th = dir * f * turns * 2 * Math.PI;
+        pts.push([qx + rr * (0.08 + 0.92 * f) * Math.cos(th), qy + rr * (0.08 + 0.92 * f) * Math.sin(th)]);
+      }
+      return `<path fill="none" d="${spline(pts)}"/>`;
+    }
+    return ''; // liscio
+  }
+
+  function tessellate(style, rng, det, prefix, defs, stroke) {
+    const name = rng.pick(ESCHER_SETS[style] || ESCHER_SETS.quadrati), type = TILE_TYPES[name];
+    const s = det === 1 ? 270 : det === 2 ? 205 : 160, gap = s * 0.06;
+    const tile = escherTile(name, rng, s);
+
+    // due o tre figure dentro la stessa piastrella
+    let regions = [tile], cuts = '', corners = tile.corners;
+    const nCuts = rng.chance(det === 1 ? 0.35 : 0.6) ? (det === 3 && rng.chance(0.5) ? 2 : 1) : 0;
+    for (let c = 0; c < nCuts; c++) {
+      const big = regions.reduce((a, b) => (Math.abs(area(b.ring)) > Math.abs(area(a.ring)) ? b : a));
+      const cut = cutRegion(big, rng, gap, corners);
+      if (!cut) break;
+      corners = corners.concat(cut.ends);
+      regions = regions.filter((r) => r !== big).concat(cut.regions);
+      cuts += `<path fill="none" d="${cut.d}"/>`;
+    }
+
+    // tutte le copie, a partire da quella al centro del foglio
+    const cen = centroid(tile.ring), gens = tile.gens.concat(tile.gens.map(Mx.inv));
+    const seen = new Set(), queue = [Mx.tr(CX - cen[0], CY - cen[1])], placed = [];
+    while (queue.length && placed.length < 3000) {
+      const T = queue.pop(), c = Mx.ap(T, cen), key = Math.round(c[0] / 4) + ',' + Math.round(c[1] / 4);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!inArea(c, s * 1.9)) continue;
+      placed.push(T);
+      gens.forEach((G) => queue.push(Mx.mul(T, G)));
+    }
+
+    // classi: orientamento della figura (le due metà di una figura simmetrica stanno insieme),
+    // oppure posizione nel reticolo quando le piastrelle sono solo traslate
+    const det2 = (T) => T[0] * T[3] - T[1] * T[2];
+    const rep = (T) => (tile.mirrors.length && det2(T) < 0 ? Mx.mul(T, tile.mirrors[0]) : T);
+    const arc = 360 / (type.fold || 1), angOf = (T) => mod(Math.round(Math.atan2(T[1], T[0]) / RAD), 360) % arc;
+    const reps = placed.map(rep), nrot = new Set(reps.filter((T) => det2(T) > 0).map(angOf)).size;
+    const mir = reps.some((T) => det2(T) < 0);
+    let total = 1, cls = () => 0;
+    if (nrot > 1 || mir) {
+      total = nrot * (mir ? 2 : 1);
+      cls = (T) => { const R = rep(T); return (det2(R) < 0 ? nrot : 0) + mod(Math.round(angOf(R) / (arc / nrot)), nrot); };
+    } else if (!tile.mirrors.length) {
+      const a = tile.gens[0], b = tile.gens[tile.gens.length - 1], D = a[4] * b[5] - a[5] * b[4], T0 = placed[0];
+      total = tile.gens.length === 3 ? 3 : 2;
+      cls = (T) => {
+        const x = T[4] - T0[4], y = T[5] - T0[5];
+        return mod(Math.round((x * b[5] - y * b[4]) / D) + Math.round((a[4] * y - a[5] * x) / D), total);
+      };
+    }
+    let nv = Math.min(total, det === 1 ? 2 : 4);
+    while (total % nv) nv--;
+
+    // decorazioni diverse per ogni classe e per ogni figura
+    const kinds = ['anelli', 'occhio', 'punti', 'spirale', 'liscio'].concat(det === 1 ? [] : ['strisce', 'squame', 'onde']);
+    for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(rng.f() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+    if (kinds[0] === 'liscio') [kinds[0], kinds[1]] = [kinds[1], kinds[0]];
+    // il contorno, senza gli assi di simmetria
+    let line = '', open = false;
+    tile.segs.forEach((g) => {
+      if (g.mirror) { open = false; return; }
+      if (!open) { line += 'M' + pt(g.b[0][0], g.b[0][1]); open = true; }
+      line += segD(g.b);
+    });
+    if (!tile.mirrors.length) line += 'Z';
+    for (let v = 0; v < nv; v++) {
+      let g = `<path fill="none" d="${line}"/>`;
+      regions.forEach((r, k) => { g += decorate(kinds[(v * regions.length + k) % kinds.length], r, `${prefix}k${v}_${k}`, rng, det, stroke, defs); });
+      defs.push(`<g id="${prefix}f${v}">${g}${cuts}</g>`);
+    }
+    return placed.map((T) => `<use href="#${prefix}f${cls(T) % nv}" transform="matrix(${T.slice(0, 4).map((x) => x.toFixed(4)).join(' ')} ${pt(T[4], T[5])})"/>`).join('');
+  }
+
   // ---------- forme e stili ----------
   const FORMS = {
     mandala:   { label: 'Mandala', def: 'misto', styles: { fiorito: 'Fiorito', geometrico: 'Geometrico', misto: 'Misto' } },
     intreccio: { label: 'Intreccio', def: 'tela', styles: { tela: 'Tela', onde: 'Onde', cesto: 'Cesto' } },
     muro:      { label: 'Muro', def: 'mattoni', styles: { mattoni: 'Mattoni', pietre: 'Pietre', piastrelle: 'Piastrelle' } },
-    escher:    { label: 'Escher', def: 'quadrati', styles: { quadrati: 'Quadrati', girandole: 'Girandole', esagoni: 'Esagoni' } }
+    escher:    { label: 'Escher', def: 'quadrati', styles: { quadrati: 'Quadrati', girandole: 'Girandole', esagoni: 'Esagoni', specchi: 'Specchi' } }
   };
 
   /**
@@ -1325,7 +1671,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
     let body;
     if (form === 'intreccio') body = weave(style, rng, det, prefix, defs, stroke);
     else if (form === 'muro') body = style === 'mattoni' ? bricks(rng, det) : style === 'pietre' ? stones(rng, det) : tiles(opts.seed, rng, det, prefix, defs, stroke);
-    else body = tessellate(style, rng, det, prefix, defs);
+    else body = (opts.v || ENGINE) >= 3 ? tessellate(style, rng, det, prefix, defs, stroke) : tessellateV2(style, rng, det, prefix, defs);
     return framed(prefix, defs, body, ink, stroke);
   }
 
@@ -1442,6 +1788,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   function buildStyles() {
     const box = $('styles');
     box.innerHTML = '';
+    box.classList.toggle('four', Object.keys(FORMS[state.form].styles).length > 3);
     Object.keys(FORMS[state.form].styles).forEach((v, i) => {
       box.insertAdjacentHTML('beforeend', `<input type="radio" name="sty" id="sty${i}" value="${v}"><label for="sty${i}">${FORMS[state.form].styles[v]}</label>`);
     });

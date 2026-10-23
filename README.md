@@ -9,8 +9,17 @@ PWA che genera disegni casuali da stampare e colorare. Tutto gira nel browser, a
   Onde (strisce ondulate), Cesto (intreccio a tre direzioni con fori esagonali).
 - **Muro** — Mattoni (a correre, fiammingo, spina di pesce, cesto, reticolato), Pietre (ciottoli o filari),
   Piastrelle (con piccoli rosoni che si completano tra piastrelle vicine).
-- **Escher** — divisioni regolari del piano: Quadrati (traslazione o glissoriflessione),
-  Girandole (rotazioni di 90°), Esagoni (traslazione o rotazioni di 120°).
+- **Escher** — divisioni regolari del piano. La piastrella nasce da un poligono i cui lati sono legati
+  da traslazioni, glissoriflessioni, rotazioni attorno ai vertici, mezzi giri attorno ai punti medi
+  o assi di simmetria (i tipi isoedrici di Heesch, 19 in tutto, nei gruppi p1, p2, p3, p4, p6, pg, pgg,
+  pmg, p4g, p31m, cmm). Stili:
+  - *Quadrati*: quadrilateri e triangoli con traslazioni, mezzi giri e glissoriflessioni;
+  - *Girandole*: figure che ruotano attorno a centri di ordine 3, 4 o 6;
+  - *Esagoni*: esagoni per traslazione, mezzi giri o rotazioni di 120° (come i Rettili di Escher);
+  - *Specchi*: figure simmetriche, come il Granchio (pmg) e gli Insetti (p4g) di Escher.
+
+  Spesso la piastrella è divisa in due o tre figure che si incastrano, e le figure orientate in modo
+  diverso ricevono decorazioni diverse (squame, strisce, onde, puntini, occhi, spirali, anelli).
 
 Le forme rettangolari riempiono il foglio lasciando una cornice.
 
@@ -49,10 +58,11 @@ e il pulsante **Condividi link** lo invia (telefono) o lo copia (computer). Esem
 | `d` | dettaglio | 1 semplice, 2 medio, 3 ricco |
 | `st` | stile | dipende dalla forma (vedi sopra, in minuscolo) |
 | `t` | tratto | 1.4–4.4 (unità del disegno: 2.4 ≈ 0,4 mm) |
-| `v` | versione del motore | 1 = prima versione, 2 = attuale; senza `v` vale 1 |
+| `v` | versione del motore | 1 = prima versione, 2 = forme rettangolari, 3 = nuove tassellature Escher (attuale); senza `v` vale 1 |
 | `cod=0` | non stampare il codice in fondo al foglio | |
 
 La versione del motore serve a non cambiare i disegni già condivisi: quando una modifica cambierebbe
 disegni esistenti, si alza `ENGINE` in `index.html` e si lascia com'è il comportamento per le versioni
-precedenti (come fa `STYLES_V1` per i mandala), così i vecchi link danno ancora lo stesso disegno.
+precedenti (come fa `STYLES_V1` per i mandala e `tessellateV2` per le tassellature), così i vecchi link
+danno ancora lo stesso disegno.
 I mandala creati con la prima versione (anche quelli salvati nei "Recenti") restano identici.
